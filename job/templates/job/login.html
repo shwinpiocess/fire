@@ -1,0 +1,88 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"> 
+    <title>登录</title>
+    <link href="{% static 'job/css/login.css' %}" rel="stylesheet">
+    <link type="image/x-icon" rel="icon" href="{% static "job/favicon.ico" %}" mce_href="{% static "job/favicon.ico" %}" />
+    <script type="text/javascript">
+        var csrftoken = '{{ csrf_token }}';
+    </script>
+</head>
+<body>
+    <div class="head-tool">
+        <!-- <div class="head-tool-inner clear">
+            <a href="/" hotrep="hp.header.hp" class="logo"><span class="visually_hidden">èé²¸</span></a>      
+        </div>  -->   
+    </div>
+    <div class="head-v3"><div class="navigation-up"></div></div>
+    <div class="body">
+        <div class="bg_body" style="height: 784px;"></div>
+        <div class="login_wrapper" style="min-width: 1200px; height: 749px;">
+            <div class="login_text login_text1"></div>
+            <div class="login_text login_text2"></div>
+            <div class="mod_login_wrapper">
+              <div id="login_box_wrapper">
+                  <div class="mod_login" id="loginbox" style="padding: 5px 0px; width:374px;height: 315px visibility: visible;margin-top:30px;">
+                    <div class="wrap" style="height: 100%;">
+                        <div class="header">
+                            <div class="switch">
+                                <a class="switch_btn_focus" hidefocus="true" id="switcher_plogin" href="javascript:void(0);" tabindex="8">帐号密码登录</a>
+                            </div>
+                        </div>
+                        <div class="login_form" style="margin-left: 30px;margin-top: 50px; ">
+                            <div id="loginform" name="loginform" style="margin:0">
+                                <input type="text" id="userName" class="inputstyle" placeholder="帐号" value="admin" />
+                                <input type="password" id="password" class="inputstyle" placeholder=密码" value="admin" />
+                                <button type="submit" class="login_button" id="loginBtn">登录</button>
+                            </div>
+                        </div>
+                    </div>
+              </div>
+            </div>
+        </div>
+    </div>
+    <div class="footer-menu">
+        <div class="footer-ct" style="text-align:center;">
+            <div class="menu-inner">
+                <div class="copy-info" style="float:none;min-height:50px;padding-top:25px;">
+                    <p style="color: #73787e;">Copyright © 2016-2026 Giant. All Rights Reserved.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+<script src="{% static 'job/vendor/jquery-1.10.2.min.js' %}"></script>
+<script src="{% static 'job/vendor/jquery.i18n.properties.min.js' %}"></script>
+<script src="{% static 'job/vendor/pnotify/pnotify.custom.min.js' %}"></script>
+<script src="{% static 'job/js/app/common.js' %}"></script>
+
+<script type="text/javascript">
+    (function(){
+        $('#loginBtn').click(function(){
+            var userName = $.trim($('#userName').val());
+            var password = $.trim($('#password').val());
+            $.ajax({
+                type : 'POST',
+                contentType : 'application/x-www-form-urlencoded',
+                url : '/login/',
+                dataType : 'json',
+                data:{
+                    username:userName,
+                    password:password,
+                },
+                success : function(result){
+                    if(result.success){
+                        window.location.href="/";
+                    }else{
+                        printMsg(result.msg.message,2);
+                    }
+                }
+            });
+        });
+    })();
+</script>
+
+</body>
+</html>

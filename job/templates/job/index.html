@@ -1,0 +1,235 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>蓝鲸作业平台</title>
+        <!-- Bootstrap css -->
+        <link href="{% static 'job/vendor/bootstrap/css/bootstrap.css' %}" rel="stylesheet">
+        <link href="{% static 'job/vendor/fontawesome/css/font-awesome.css' %}" rel="stylesheet">
+        <!-- 以下两个插件用于在IE8以及以下版本浏览器支持HTML5元素和媒体查询，如果不需要用可以移除 -->
+        <!--[if lt IE 9]>
+        <script src="{% static 'job/vendor/html5shiv.min.js' %}"></script>
+        <script src="{% static 'job/vendor/respond.min.js' %}"></script>
+        <![endif]-->
+        <link href="{% static 'job/vendor/dataTables/dataTables.bootstrap.css' %}" rel="stylesheet">
+        <link href="{% static 'job/vendor/jqueryUI/jquery-ui.min.css' %}" rel="stylesheet">
+        <link href="{% static 'job/vendor/jqueryUI/theme.css' %}" rel="stylesheet">
+        <link href="{% static 'job/vendor/ux/CodeMirror/lib/codemirror.css' %}" rel="stylesheet">
+        <link href="{% static 'job/vendor/ux/CodeMirror/theme/erlang-dark.css' %}" rel="stylesheet">
+        <link href="{% static 'job/vendor/ux/CodeMirror/addon/display/fullscreen.css' %}" rel="stylesheet">
+        <link href="{% static 'job/vendor/chosen/chosen.css' %}" rel="stylesheet">
+        <link href="{% static 'job/vendor/pnotify/pnotify.custom.min.css' %}" rel="stylesheet">
+        <link href="{% static 'job/vendor/kendoUITreeView/kendo.common.min.css' %}" rel="stylesheet">  
+        <link href="{% static 'job/vendor/kendoUITreeView/kendo.default.min.css' %}" rel="stylesheet">
+        <link href="{% static 'job/css/bk_base.css' %}" rel="stylesheet">
+        <link href="{% static 'job/css/bk_app_theme.css' %}" rel="stylesheet">
+        <link href="{% static 'job/css/ijobs.css' %}" rel="stylesheet">
+        <script type="text/javascript">
+            var isNewUser = false;
+        </script>
+    </head>
+
+    <body style="background-color:#fafafa;">
+        <!-- ijobs封面 -->
+        <div id="cover" style="z-index:3000;position: fixed;top:0;left:0;height:100%;width:100%;text-align: center;display: none;">
+            <div style="width:100%;height:100%;background: #000;opacity: 0.5;"></div>
+            <img src="{% static 'job/img/cover.png' %}" style="position: fixed;top:60px;left:50%;width:900px;height:600px;margin-left:-450px;"/>
+            <a class="king-btn king-btn-icon king-round king-default" title="关闭" style="position: fixed;top:80px;left:50%;margin-left:400px;" id="coverClose">
+                 <i class="fa fa-close btn-icon"></i>
+            </a>
+        </div>
+        <!-- ijobs封面 end -->
+
+        <header class="king-main-header" style="z-index:2995;">
+            <div style="width:230px;" class="pull-left">
+                <a class="logo" href=".">
+                    <img alt="logo" src="{% static 'job/img/ijobs.png' %}">
+                    <span class="logo-lg">蓝鲸作业平台</span></a>
+                <a class="navbar-minimalize  pull-right" href="#" style="font-size:22px;min-width:20px;padding:12px 0;height:44px;"></a>
+            </div>
+            <nav class="navbar">
+                <div class="king-business-select pull-left dropdown ml20">
+                    <span>当前业务：</span>
+                    <span>
+                        <select name="APPID" id="APPID" style="height: 34px;width: 248px;border: 1px solid #ccc;"></select>
+                    </span>
+                </div>
+                <div class="navbar-custom-menu">
+                    <ul class="nav navbar-nav">
+                        <li class="dropdown">
+                            <a aria-expanded="false" aria-haspopup="true" role="button" data-toggle="dropdown" class="dropdown-toggle" href="#" id="drop4">帮助中心
+                                <span class="caret"></span></a>
+                            <ul aria-labelledby="drop4" class="dropdown-menu" id="menu1">
+                                <li>
+                                    <a href="javascript:;" id="menu1-instruction">平台介绍</a></li>
+                                <li>
+                                    <a href="javascript:;" id="menu1-logout">注销</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+        </header>
+
+        <div class="king-layout6-main">
+            <!-- 左边 start -->
+            <div class="king-layout6-sidebar" style=" background:#293038">
+                <section class="king-sidebar" style="height: auto;">
+                    <ul class="king-sidebar-menu">
+                         <li class="treeview">
+                         <a href="./app/main.jsp" class="home" id="home">
+                         <i class="fa fa-home"></i>
+                         <span>首页</span>
+                         </a>
+                         </li>
+                        <li class="treeview">
+                            <a href="#">
+                                <i class="fa fa-calendar-o"></i>
+                                <span>作业执行</span>
+                                <span class="fa fa-angle-right pull-right"></span>
+                            </a>
+                            <ul class="treeview-menu" style="background: #1C2026;">
+                                <li>
+                                    <a href="./app/fastExecuteScript.jsp">
+                                        <i class="fa"></i>快速脚本执行</a>
+                                </li>
+                                <li>
+                                    <a href="./app/fastPushFile.jsp">
+                                        <i class="fa"></i>快速分发文件</a>
+                                </li>
+                                <li>
+                                    <a href="./app/jobList.jsp">
+                                        <i class="fa"></i>常用作业执行</a>
+                                </li>
+                                <li>
+                                    <a href="./app/newTask.jsp">
+                                        <i class="fa"></i>新建作业</a>
+                                </li>
+                                <li>
+                                    <a href="./app/crontabTaskList.jsp">
+                                        <i class="fa"></i>定时作业</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="treeview">
+                            <a href="#">
+                                <i class="fa fa-briefcase"></i>
+                                <span>业务管理</span>
+                                <span class="fa fa-angle-right pull-right"></span>
+                            </a>
+                            <ul class="treeview-menu" style="background: #1C2026;">
+                                <li>
+                                    <a href="./app/userList.jsp">
+                                        <i class="fa"></i>账户管理</a>
+                                </li>
+                                <li>
+                                    <a href="./app/scriptList.jsp">
+                                        <i class="fa"></i>脚本管理</a>
+                                </li>
+                                <li>
+                                    <a href="./app/groupList.jsp">
+                                        <i class="fa"></i>分组管理</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="treeview">
+                            <a href="#">
+                                <i class="fa fa-list-alt"></i>
+                                <span>执行历史</span>
+                                <span class="fa fa-angle-right pull-right"></span>
+                            </a>
+                            <ul class="treeview-menu" style="background: #1C2026;">
+                                <li>
+                                    <a href="./app/taskInstanceList.jsp">
+                                        <i class="fa"></i>执行历史</a>
+                                </li>
+                            </ul>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+            <!-- 左边 end -->
+            <!-- 右边 start -->
+            <div class="king-layout6-content">
+                <section style="padding:0 15px;display:none;">
+                    <ol class="breadcrumb" style="margin-bottom:0;border-bottom:1px solid #eee;background:none;border-radius:0;padding-left:5px;">
+                        <li>
+                            <i class="fa fa-dashboard"></i>首页</li>
+                        <li id='breadcrumb-2'></li>
+                        <li id='breadcrumb-3'></li>
+                    </ol>
+                </section>
+                <section class="king-content"></section>
+            </div>
+            <!-- 右边 end -->
+        </div>
+
+        <!-- confirmModal 方法 start 勿删 -->
+        <div id="confirmModal" class="modal fade bs-example-modal-sm">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <div class="modal-header modal-header2">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span></button>
+                        <h4 class="modal-title" id="confirmModalTitle"></h4>
+                    </div>
+                    <div class="modal-body text-center" id="confirmModalContent"></div>
+                    <div class="modal-footer modal-footer-center">
+                        <button type="button" class="btn btn-primary btn-sm" id="yBtn">确定</button>
+                        <button type="button" class="btn btn-default btn-sm" id="cBtn">取消</button></div>
+                </div>
+                <!-- /.modal-content --></div>
+            <!-- /.modal-dialog --></div>
+        <!-- /.modal -->
+
+        <!-- confirmModal 方法 start 勿删 -->
+        <div id="confirmModal_yesNoCancel" class="modal fade bs-example-modal-sm">
+            <div class="modal-dialog modal-sm" style="width: 360px;">
+                <div class="modal-content">
+                    <div class="modal-header modal-header2">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span></button>
+                    </div>
+                    <div class="modal-body text-center" id="confirmModalContent_yesNoCancel"></div>
+                    <div class="modal-footer modal-footer-center">
+                        <!-- <button type="button" class="btn btn-default btn-sm" id="yBtn_yesNoCancel">同名文件覆盖</button> -->
+                        <button type="button" class="btn btn-default btn-sm" id="nBtn_yesNoCancel">追加源IP目录</button>
+                        <button type="button" class="btn btn-primary btn-sm" id="cBtn_yesNoCancel">继续修改</button></div>
+                </div>
+                <!-- /.modal-content --></div>
+            <!-- /.modal-dialog --></div>
+        <!-- /.modal -->
+        <!-- confirmModal start 勿删 -->
+    
+        <!-- 如果要使用Bootstrap的js插件，必须先调入jQuery -->
+        <script src="{% static 'job/vendor/jquery.js' %}"></script>
+        <script src="{% static 'job/vendor/jquery-1.10.2.min.js' %}"></script>
+        <script src="{% static 'job/vendor/jquery.i18n.properties.min.js' %}"></script>
+        <script src="{% static 'job/vendor/jqueryUI/jquery-ui.min.js' %}"></script>
+        <script src="{% static 'job/vendor/jqueryUI/datepicker-zh-CN.js' %}"></script>
+        <!-- 包括所有bootstrap的js插件或者可以根据需要使用的js插件调用　-->
+        <script src="{% static 'job/vendor/bootstrap/js/bootstrap.min.js' %}"></script>
+        <script src="{% static 'job/vendor/chosen/chosen.jquery.js' %}"></script>
+        <script src="{% static 'job/vendor/dataTables/jquery.dataTables.js' %}"></script>
+        <script src="{% static 'job/vendor/dataTables/dataTables.bootstrap.js' %}"></script>
+        <script src="{% static 'job/vendor/jqueryUpload/jquery.iframe-transport_11.js' %}"></script>
+        <script src="{% static 'job/vendor/jqueryUpload/jquery.ui.widget_11.js' %}"></script>
+        <script src="{% static 'job/vendor/jqueryUpload/jquery.fileupload.js' %}"></script>
+        <script src="{% static 'job/vendor/asyncUpload/asyncUpload.min.js' %}"></script>
+        <script src="{% static 'job/vendor/ux/ZeroClipboard/ZeroClipboard.min.js' %}"></script>
+        <script src="{% static 'job/vendor/kendoUITreeView/kendo.all.min.js' %}"></script>
+        <script src="{% static 'job/vendor/ux/CodeMirror/lib/codemirror.js' %}"></script>
+        <script src="{% static 'job/vendor/ux/CodeMirror/mode/shell/shell.js' %}"></script>
+        <script src="{% static 'job/vendor/ux/CodeMirror/mode/perl/perl.js' %}"></script>
+        <script src="{% static 'job/vendor/ux/CodeMirror/mode/python/python.js' %}"></script>
+        <script src="{% static 'job/vendor/ux/CodeMirror/mode/clike/clike.js' %}"></script>
+        <script src="{% static 'job/vendor/ux/CodeMirror/CodeMirror.js' %}"></script>
+        <script src="{% static 'job/vendor/ux/CodeMirror/addon/display/fullscreen.js' %}"></script>
+        <script src="{% static 'job/vendor/pnotify/pnotify.custom.min.js' %}"></script>
+        <script src="{% static 'job/js/app/app.js' %}"></script>
+        <script src="{% static 'job/js/app/common.js' %}"></script>
+    </body>
+</html>
