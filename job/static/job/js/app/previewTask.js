@@ -8,9 +8,8 @@ $(function($){
 			_data.taskInstanceId = _extraObj.taskInstanceId;
 		}
 		$.ajax({
-			type : 'post',
-            contentType : 'application/x-www-form-urlencoded',
-			url : basePath+'nm/jobs/taskAction/getTaskDetail.action',
+			type : 'post',			 
+			url : basePath+'nm/jobs/jobsAction!getTaskDetail.action',
 			dataType : 'json',
 			data : _data,
 			success:function(result){
@@ -55,8 +54,8 @@ $(function($){
 			   $.load();
 				if(extraObj.taskInstanceId){
 					$.ajax({
-						contentType:'application/x-www-form-urlencoded',
-						url : basePath+'/nm/jobs/taskExecuteAction/reExecuteTask.action',
+						type : 'post',
+						url : basePath+'/nm/jobs/taskExecuteAction!reExecuteTask.action',
 						dataType:'json',
 						data:{
 							taskInstanceId : extraObj.taskInstanceId
@@ -82,8 +81,8 @@ $(function($){
 				 		return false;
 				 	}
 					$.ajax({
-						contentType:'application/x-www-form-urlencoded',
-						url : basePath+'nm/jobs/taskExecuteAction/executeTask.action',
+						type : 'post',
+						url : basePath+'nm/jobs/taskExecuteAction!executeTask.action',
 						dataType:'json',
 						data:{
 							taskId : extraObj.taskId,
@@ -178,7 +177,7 @@ $(function($){
 		
 		_temp.find('.iplist').createServerIp({
 			readOnly:true,
-			ipListString:step.ipList,
+			ipListString:step.ipListStatus,
 			serverSetId : step.serverSetId,
 			width:'700px'
 		});
@@ -202,13 +201,15 @@ $(function($){
 		_temp.find('.isExecute-checkbox').val(step.stepId);
 		_temp.find('.iplist').createServerIp({
 			readOnly:true,
-			ipListString:step.ipList,
+			ipListString:step.ipListStatus,
 			serverSetId : step.serverSetId,
 			width:'700px'
 		});
 		//执行账户初始化数据
+//		var fileSources = step.fileSource;
+        var fileSources = eval(step.fileSource);
 		var fileTransfer = _temp.find('.file-table').fileTransferModule({readOnly : true});
-		fileTransfer.setValue(JSON.parse(step.fileSource));
+		fileTransfer.setValue(fileSources);
 		_temp.find('.show-step').click(function(){
 			_temp.find('.tag-tr').toggle(); 
 		});

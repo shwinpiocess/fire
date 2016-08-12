@@ -3,20 +3,20 @@
  */
  
 $(document).ready(function () {
-    
 	$('#APPID').chosen({});
 	//获取业务列表 
 	$.ajax({
 		type : 'POST',
-		url : 'nm/personal/appAction/getAppList.action',
+		url : basePath+'nm/personal/appAction!getAppList.action',
 		dataType : 'json',
 		success : function(result){
-			var data = result.data
+			var data = result.data;
 			var tempHtml="";
 			if(data){
-				var noAppid = true; 
+				var noAppid = true;
+                
 				$.each(data, function(name,value){
-//					tempHtml+='<optgroup label="'+ value.groupName +'">';
+					tempHtml+='<optgroup label="'+ value.groupName +'">';
 					for(var i=0;i<value.groupList.length;i++){
 						var v = value.groupList[i];
 						if(v.id == APPID){
@@ -26,16 +26,16 @@ $(document).ready(function () {
 							tempHtml+='<option value="'+v.id+'">'+v.applicationName+'</option>';
 						}
 					}
-//					tempHtml+="</optgroup>";
+					tempHtml+="</optgroup>";
 				});
 				$('#APPID').append(tempHtml);
 				$('#APPID').trigger("chosen:updated").on('change', function(evt, params) {
 					var appid = $(this).val();
 				    $.ajax({
-                        contentType:'application/x-www-form-urlencoded',
-						url : 'nm/personal/appAction/switchApp.action',
+						type : 'POST',
+						url : basePath+'nm/personal/appAction!switchApp.action',
 						dataType : 'json',
-                        data:{appId:appid},
+						data:{appId:appid},
 						success : function(result){
 							if(result.success){
 								printMsg(result.msg.message,1);
@@ -54,7 +54,16 @@ $(document).ready(function () {
 			}
 		}
 	});
-
+	$.ajax({
+		type : 'POST',
+		url : basePath+'nm/personal/appAction!getPlatId.action',
+		dataType : 'json',
+		success : function(rs){
+			if(rs.success){
+				sourceArr = rs.data;
+			}
+		}
+	});
 	$('.treeview').hover(function(){
 		if ($('body').hasClass('mini-navbar')) {
 			$('.treeview-menu').addClass('none');
@@ -69,9 +78,21 @@ $(document).ready(function () {
 	$('.treeview>a').on('click',function(e){
 		if($(this).attr('id')==='home'){
 			e.preventDefault();
-			treeview_menu($(this).attr('href'))
-			return;
+			if (currentPage && currentPage.endsWith('newTask.jsp')) {
+				var r = true;				
+				if(JSON.stringify(getAllData(false)) != oldTaskEditContent){
+					var r = confirm("您所编辑的作业尚未保存，是否确定离开？");
+				}
+				if (r == true) {
+				    treeview_menu($(this).attr('href'));
+				} else {
+					return false;
+				}
+			}else{
+				treeview_menu($(this).attr('href'));
+			}
 		}
+		
 		if (!$('body').hasClass('mini-navbar')) {
 		      var treeView = $(this).next();
 	
@@ -113,43 +134,57 @@ $(document).ready(function () {
 				treeViewName:treeViewName,
 				liName :liName,
 				liUrl:liUrl
-			})
-		})
+			});
+		});
 	}); 
 	function treeview_menu(url){
 		$(".popover").remove();
 		$('.treeview-menu li').removeClass('active');	
+		if(url.indexOf('main.jsp')!=-1){
+			$('#home').parent().addClass('active');
+			createNewTab(null, url, null);
+			return;
+		}
 		$.each(menuObj,function(i,v){
 			if(v.liUrl == url){
 				createNewTab(v.liName, v.liUrl, v.treeViewName);
-				var lis =$('.treeview').find('ul li').find('a')
+				var lis =$('.treeview').find('ul li').find('a');
 				$.each(lis,function(i,v){
 					if($(v).attr('href') == url){
 						$(v).parent().addClass('active');
 						$('.treeview').removeClass('active');
 						$(v).parent().parent().parent().addClass('active');
 					}	
-				})
+				});
 				return;
 			}
 		});
 	}
 	
 	$('.king-sidebar-menu>.treeview>.treeview-menu a').click(function(event){
-		treeview_menu($(this).attr('href'));
+		if (currentPage && currentPage.endsWith('newTask.jsp')) {
+			var r = true;
+			if(JSON.stringify(getAllData(false)) != oldTaskEditContent){
+				r = confirm("您所编辑的作业尚未保存，是否确定离开？");
+			}
+		    if (r == true) {
+			    treeview_menu($(this).attr('href'));
+			}
+		}else{
+			treeview_menu($(this).attr('href'));
+		}
 		return false;
 	});
-	 
-	
+            
 	//获取url参数
 	var query = window.location.href;
 	var page = query.substring(query.lastIndexOf('/')+2,query.length);
 	var fullPage = './app/'+page+'.jsp';
-
+	
 	if(urlArray.indexOf(fullPage) !=-1){
 		treeview_menu(fullPage);
 	}else{
-		treeview_menu('/fastExecuteScript/');
+		treeview_menu('./app/main.jsp');
 	}
 	
 	 $('.king-layout6-sidebar').find('li').find('a').click(function(e){
@@ -163,6 +198,7 @@ $(document).ready(function () {
 	        SmoothlyMenu();
 	    });
 	 
+	 //首次登录展示封面
 	 (function(){
 		 function showCover(){
 			 $('#cover').show();
@@ -176,18 +212,5 @@ $(document).ready(function () {
 		 $('#menu1-instruction').click(function(){
 			 showCover();
 		 });
-         
-         $('#menu1-logout').click(function() {
-			$.ajax({
-				type : 'GET',
-				url : 'nm/user/userAction/logout.action',
-				success : function(rs) {
-					debugger;
-					if(rs.success){
-						window.location.href=rs.data.loginUrl;						
-					}
-				}
-			});
-		});
 	 })();
 });

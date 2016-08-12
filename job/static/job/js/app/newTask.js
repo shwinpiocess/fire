@@ -1,7 +1,273 @@
+var oldTaskEditContent;
+var semaphore = simpleSemaphore();
+var initing = false;
+function updateOldData(){
+	if(initing){
+		oldTaskEditContent = JSON.stringify(getAllData(false));		
+	}
+	initing = false;
+	$.unload();
+}
+
+//获取所有保存值 ，isValidate 是否验证数据
+function getAllData(isValidate){
+	var taskId = $('#taskId').val() || 0;
+	var taskName = $.trim($('#task-name').val());
+	if(!taskName && isValidate) {
+		$('#task-name').popover({"viewport":false});
+		$('#task-name').popover('show');  
+		return false;
+	}
+	
+	var _group = $('#group-ul'); //组
+	var stepDataList = [];
+	if(_group.find('.group-li').length>0){
+		$.each(_group.find('.group-li'),function(i,g_li){
+            var stepData = getOneStepData(i+1, $(g_li), isValidate);
+            if(stepData.length>0){
+				stepDataList = stepDataList.concat(stepData);
+            }else{
+                stepDataList = [];  
+                return false;
+            }
+		});
+	};
+    
+    if(stepDataList.length<=0 && isValidate){
+        return false;
+    }
+    
+	//排序
+	 $.each(stepDataList,function(i,e){
+		 stepDataList[i].ord = i+1;
+     });
+	
+	 return {
+		 taskId : taskId,
+		 name : taskName,
+		 steps : stepDataList
+	 };
+};
+//获取每一步骤的值
+function getOneStepData(ord, _g_li, isValidate){
+	if(!_g_li)return false;
+	var _node_ul =  _g_li.find('.group-node-ul');
+	var blockName_obj = _node_ul.find('.group-name-input');
+	var blockName = $.trim(blockName_obj.val());
+	if(!blockName && isValidate) {
+		blockName_obj.popover({'viewport':false});			
+    	blockName_obj.popover('show');  
+    	return false;
+	}
+	var blockType = _node_ul.find('.group-type-input').val();
+	var blockOrd = ord;
+	var stepData = [];
+	$.each(_node_ul.find('.group-node-item'), function(i,item){
+        var nodeData = getNodeData($(item), blockName, blockOrd, blockType, isValidate);
+        if(nodeData){
+		     stepData.push(nodeData);
+        }else{
+            stepData = [];
+            return false;
+        }
+	});
+	return stepData;
+};
+
+function getNodeData(_item, blockName, blockOrd, blockType, isValidate){
+	var _node_table = _item.find('.group-node-table');
+	var stepId = ""==_node_table.find('input.step_id').val()?0:_node_table.find('input.step_id').val();
+	var type = blockType;
+	var ord = null;
+	var name_obj = _node_table.find('.step_name_input');
+	var name = $.trim(name_obj.val());
+	
+	var account_obj = _node_table.find('.step_accout_sel');
+	var account = $.trim(account_obj.val());
+	var ipList = $.trim(_node_table.find('.hidden-serverip-string').val());
+	var serverSetId = _node_table.find('.hidden-serverSetId').val();
+	var ccScriptId = _node_table.find('.cc-scriptId').last().val();
+	var ccScriptParam = $.trim(_node_table.find('.cc-param-hidden').last().text());
+    var isPause = _node_table.find('input[name=stop-after-step]:checked').length>0?1:0;
+    var text = _node_table.find('.step_text_input').val();
+    
+    
+
+//    校验位置：
+//    未校验成功返回 return false;
+    if (!name && isValidate) {
+    	name_obj.popover({"viewport":false});
+    	name_obj.popover('show');  
+    	return false;
+    } 
+    if(!account && isValidate) {
+    	account_obj.popover({"viewport":false});
+    	account_obj.popover('show');  
+    	return false;
+    }  
+	var nodeData = null; 
+    nodeData={
+        stepId : stepId,
+        type : type,
+        blockOrd : blockOrd,
+        blockName : blockName,
+        ord : ord,
+        name : name,
+        account : account,
+        ipList : ipList,
+        serverSetId : serverSetId,
+        isPause: isPause,
+        text : text,
+        ccScriptId : ccScriptId || 0,
+        ccScriptParam : ccScriptParam
+    };
+	if(blockType==1){
+		var scriptType = _node_table.find('.hidden-scriptCodeType').val();
+		var scriptContent = $.trim(_node_table.find('.hidden-scriptCode-content').val());
+		var scriptParam = _node_table.find('.step_param_input').val();
+		var paramType = _node_table.find('.step_paramType:checked').length>0?2:1;
+		var scriptTimeout = parseInt(_node_table.find('.scriptTimeout').val()||1000);
+        if (!scriptContent && isValidate) {
+        	_node_table.find('tr.tag-tr').removeClass('none');
+        	var scriptContent_obj = _node_table.find('.code-cont');
+        	scriptContent_obj.attr("data-content", "必填项");
+        	account_obj.popover({"viewport":false});
+        	scriptContent_obj.popover('show');  
+        	return false;
+        }
+        nodeData['scriptType'] = scriptType;
+        nodeData['scriptContent'] = scriptContent;
+        nodeData['scriptParam'] = scriptParam;
+        nodeData['paramType'] = paramType;
+        nodeData['scriptTimeout'] = scriptTimeout;
+	}else if (blockType==2){
+		// 获取fileSource,常用作业执行->编辑->删除文件->保存->刷新->已删除--start
+        var me = this;
+        me._table = _node_table.find('.fileSourceTable');
+        me._tbody = me._table.find('tbody').eq(0);
+        me._fileSource = me._table.find('.fileSource');
+        var rs=[];
+        $.each(_tbody.children('tr:not(.blankTr)'),function(i,opt){
+			var _tr = $(opt);
+			if($(opt).find('.fileName').length>0){//本地
+				rs.push({
+					file : $(opt).find('.filePath').val(),
+					size : $(opt).find('.fileSize').text()
+				});
+			}else{//远程
+				if($(opt).find('.f_edit').hasClass('none')){
+					rs.push({
+						file : $(opt).find('.filePath').val(),
+						ipList : $(opt).find('.hidden-serverip-mode2').val(),
+						serverSetId : $(opt).find('.hidden-serverSetId-mode2').val(),
+						account : $(opt).find('.account').text(),
+						ccScriptId : $(opt).find('.cc-scriptId').val() || 0,
+					    ccScriptParam : $.trim($(opt).find('.cc-param-hidden').text())
+					});
+				}else{
+					rs=[];
+					return false;
+				}
+			}
+		});
+		me._fileSource.val(JSON.stringify(rs));
+		// 获取fileSource,常用作业执行->编辑->删除文件->保存->刷新->已删除--end
+		var fileTargetPath = $.trim(_node_table.find('.step_param_input').val());
+		var fileSource = $.trim(_node_table.find('.fileSource').val());
+		var stepPath_obj = _node_table.find('.step_path_input').find('input');
+		
+
+        if (!fileTargetPath && isValidate) {
+        	stepPath_obj.popover({"viewport":false});
+        	stepPath_obj.popover('show');  
+        	return false;
+        }
+        var validFilePath = validPaths(fileTargetPath);
+		if(validFilePath !== true && isValidate){
+			stepPath_obj.attr('data-content',validFilePath);
+			stepPath_obj.popover({"viewport":false});
+        	stepPath_obj.popover('show');  
+			return false;
+		}
+    	var fileSource_obj = _node_table.find('.file-table');
+        if(!fileSource && isValidate) {
+        	_node_table.find('tr.tag-tr').removeClass('none');
+        	fileSource_obj.attr("data-content", "必填项");
+        	fileSource_obj.popover({"viewport":false});
+        	fileSource_obj.popover('show'); 
+        	return false;
+        }else{
+        	if(fileSource_obj.find('tr').length>2){
+        		var noSave = false;
+				$.each(fileSource_obj.find('tr:not(.blankTr)'),function(i,opt){
+					if($(opt).find('.f_save').hasClass('none') && isValidate){
+						_node_table.find('tr.tag-tr').removeClass('none');
+						$(opt).find('.saveFile').scrollGotoHere();
+						$(opt).css({backgroundColor : '#ddd'});
+						$(opt).stop();
+						$(opt).animate({
+							'backgroundColor' : '#fff'
+						},2000);
+						noSave = true;
+						return false;
+					}
+				});
+				if(noSave && isValidate){
+					printMsg('数据未保存！',2);
+					return false;
+				}
+			}
+        }
+        nodeData['fileTargetPath'] = fileTargetPath;
+        nodeData['fileSource'] = fileSource;
+	}
+	if(!ipList && !ccScriptId && isValidate) {
+    	_node_table.find('tr.tag-tr').removeClass('none');
+    	var iplist_btn_obj = _node_table.find('.iplist').find('.showModel');
+    	iplist_btn_obj.attr("data-content", "必填项");
+    	iplist_btn_obj.popover({"viewport":false});
+    	iplist_btn_obj.popover('show');  
+    	return false;
+    }
+    if (blockType==2) {
+        var ipDestArray = ipList.split(',');
+        var fileSource = nodeData['fileSource'];
+        var fileSrcObj = eval(fileSource);
+        for (var i = 0; i < fileSrcObj.length; i++){
+            var ipListSrc = fileSrcObj[i].ipList;
+            if (ipListSrc) {
+                var ipArraySrc = ipListSrc.split(',');
+                for (var j = 0; j < ipArraySrc.length; j++) {
+                    for (var k = 0; k < ipDestArray.length; k++) {
+                        if (ipDestArray[k] == ipArraySrc[j] && isValidate) {
+                        	_node_table.find('tr.tag-tr').removeClass('none');
+                            var iplist_btn_obj = _node_table.find('.iplist').find('.showModel');
+                            iplist_btn_obj.attr("data-content", "文件传输，禁止从本机传本机，IP：" + ipDestArray[k].replace(/^.*:/,''));
+                            iplist_btn_obj.popover({"viewport":false});
+                            iplist_btn_obj.popover('show');
+                            return false;
+                        }
+                    }
+                }
+            }
+      } 
+    }
+	return nodeData;
+}
+
 $(function($){
 	var curr_index = null;
 	var isProgress = false;
-	var copyIp='',copyScriptId=0,copyScriptName,copyScriptParam;
+	var copyIp='', copyScriptId=0, copyScriptName, copyScriptParam;
+
+	$(window).bind('beforeunload',function(){
+		if(currentPage && currentPage.endsWith('newTask.jsp') && JSON.stringify(getAllData(false)) != oldTaskEditContent){
+			return '您所编辑的作业尚未保存，是否确定离开？';
+		} else {
+			return;
+		}
+	});
+	
 	//添加脚本步骤
 	$('#addScriptBtn').click(function(){
 		var _temp_s = $('#script-template');//脚本模版
@@ -77,7 +343,7 @@ $(function($){
 		            });
 				});
 			}else{
-				printMsg('作业中至少需要一个步骤！',2)
+				printMsg('作业中至少需要一个步骤！',2);
 			}
 		});
 		
@@ -114,7 +380,7 @@ $(function($){
 		                $(this).find('.item-cut').show().animate({'right':'10px','opacity':1},400);
 		            }
 		            
-		        })
+		        });
 		    }else{
 		    	printMsg('没有可以拆分的节点！',2);
 		    }
@@ -144,10 +410,14 @@ $(function($){
 	//脚本节点初始化
 	function scriptNodeInit(_temp,step){
 		//执行账户初始化数据
+		semaphore.add();
 		$.ajax({
-			contentType:'application/json',
-			url : basePath+'nm/components/accountAction/searchAccountList.action',
+			type : 'post',
+			url : basePath+'nm/components/accountAction!searchAccountList.action',
 			dataType:'json',
+			data:{
+				applicationId : APPID
+			},
 			success:function(result){
 				var data = result.data;
 				if(data){
@@ -161,27 +431,30 @@ $(function($){
 					 };
 					 _temp.find('.step_accout_sel').html(inner).chosen();
 				}
+				semaphore.sub(updateOldData);
 			}
 		});
 		
 		//脚本名称初始化数据
-		 $.ajax({
-			  contentType:'application/json',
-			  url : basePath+"nm/components/scriptAction/getScriptList.action",			  
+		semaphore.add();
+		$.ajax({
+			  type : 'post',
+			  url: basePath+"nm/components/scriptAction!getScriptList.action",			  
 			  dataType:'json',
-			  data:JSON.stringify({applicationId : APPID}),
+			  data:{
+				  applicationId : APPID
+			  },
 			  success: function(reponseText){
 				  var inner = '<option></option>';
 				  var data = reponseText.data; 
 				  for(var i=0;i< data.length;i++){
-					  inner += '<option value="'+data[i].id+'">'+data[i].name+'</option>';					 
+					  inner += '<option value="'+data[i].scriptId+'">'+data[i].name+'</option>';					 
 				  }
 				  _temp.find('.cmbScript').html(inner).chosen({width:'350px'}).change(function(){
 					  var scriptId = _temp.find('.cmbScript').val();					
 					  $.ajax({
 						  type : 'post',
-                          contentType:'application/x-www-form-urlencoded',
-						  url: basePath+"nm/components/scriptAction/getScriptContent.action",			  
+						  url: basePath+"nm/components/scriptAction!getScriptContent.action",			  
 						  dataType:'json',
 						  data:{
 							  scriptId : scriptId
@@ -198,6 +471,7 @@ $(function($){
 						  }
 					  });
 				  });
+				  semaphore.sub(updateOldData);
 			  }
 		}); 
 		
@@ -242,7 +516,7 @@ $(function($){
 				}
 			},
 			defalutProgress : true,
-			saveUrl : basePath + 'nm/components/uploadAction/uploadScript.action'
+			saveUrl : basePath + 'nm/components/uploadAction!uploadScript.action'
 		});
 		// 脚本内容插件初始化
 		var codeMir = null;
@@ -257,7 +531,7 @@ $(function($){
          if(step&&(step.ipList || step.ccScriptId)){
 		     _temp.find('.iplist').createServerIp({
 	            	width:'700px',
-	            	ipListString:step.ipList,
+	            	ipListString:step.ipListStatus,
 	            	serverSetId : step.serverSetId,
 	            	ccScriptId : step.ccScriptId || 0,
 	            	ccScriptParam : step.ccScriptParam,
@@ -288,6 +562,9 @@ $(function($){
         }else{
         	_temp.find('.step_param_input').prop('disabled',false);
         }
+        if(step&&step.scriptTimeout >= 0){
+			_temp.find('.scriptTimeout').val(step.scriptTimeout);
+        }
 		_temp.on('click','.step_paramType',function(){
 			 if($(this).prop('checked')){
 				 _temp.find('.step_param_input').prop('disabled',true);
@@ -295,6 +572,26 @@ $(function($){
 				 _temp.find('.step_param_input').prop('disabled',false); 
 			 }
         });
+		_temp.on('keydown','.scriptTimeout',function(e){
+			var k = e.keyCode;
+			if ((k <= 57 && k >= 48) || (k <= 105 && k >= 96) || (k == 8)){  
+		      return true;  
+		    }else {  
+		     return false;  
+		    }  
+		});
+		_temp.on('change','.scriptTimeout',function(){
+			var value = parseInt($(this).val());
+			if(value<60){
+				$(this).val(60);
+			}else if(value>=60 && value<= 3600){
+				$(this).val(value);
+			}else if(value>3600){
+				$(this).val(3600);
+			}else{
+				$(this).val(1000);
+			}
+		});
 		nodeOperate(_temp);
 	}
 	
@@ -333,10 +630,14 @@ $(function($){
 			_temp.find('.file-table').popover('hide');
 		});
 		//执行账户初始化数据
+		semaphore.add();
 		$.ajax({
-			contentType:'application/json',
-			url : basePath+'nm/components/accountAction/searchAccountList.action',
+			type : 'post',
+			url : basePath+'nm/components/accountAction!searchAccountList.action',
 			dataType:'json',
+			data:{
+				applicationId : APPID
+			},
 			success:function(result){
 				var data = result.data;
 				if(data){
@@ -346,16 +647,18 @@ $(function($){
                              inner += '<option value="'+data[i].account+'" selected>'+data[i].account+'</option>';                   
                         }else{
                              inner += '<option value="'+data[i].account+'">'+data[i].account+'</option>';                    
-                        }					 
-					 };
+                        }
+					 }
 					 _temp.find('.step_accout_sel').html(inner).chosen();
+
 				}
+				semaphore.sub(updateOldData);
 			}
 		});
 		
 		//本地文件
 		_fileUpload.fileupload({
-	    	url : basePath + "nm/components/uploadAction/uploadFile.action",
+	    	url : basePath + "nm/components/uploadAction!uploadFile.action",
 	    	dataType: 'json',
 	    	change:function(e, data){
 	    		var nameFail,sizeFail,repeat=[] , allFileName = fileTransfer.getAllFileName();
@@ -417,7 +720,7 @@ $(function($){
 	    		var status = data.jqXHR.status,fileName= data.files[0].name;
 	    		if(status==413){
 	    			printMsg('文件不能大于500M！',2);
-	    			fileTransfer.fail(fileName)
+	    			fileTransfer.fail(fileName);
 	    		}
 	    	},
 	    	error : function(e, data){
@@ -443,7 +746,7 @@ $(function($){
         if(step&&(step.ipList || step.ccScriptId)){
               _temp.find('.iplist').createServerIp({
               	width:'700px',
-              	ipListString:step.ipList,
+              	ipListString:step.ipListStatus,
               	serverSetId : step.serverSetId,
               	ccScriptId : step.ccScriptId || 0,
             	ccScriptParam : step.ccScriptParam,
@@ -470,7 +773,9 @@ $(function($){
             _temp.find('.text-tr').removeClass('none');
         }
         if(step&&step.fileSource){
-            fileTransfer.setValue(JSON.parse(step.fileSource));
+//            var fileSource = step.fileSource;
+//            fileTransfer.setValue(step.fileSource);
+            fileTransfer.setValue(eval(step.fileSource));
         }
 	    nodeOperate(_temp);
 	};
@@ -620,7 +925,12 @@ $(function($){
 		//节点删除
 		_temp.on('click','.node-del',function(){
 			confirmModal('提示','是否删除该节点?',function(){
-				_temp.remove();
+                if (_temp.parent().find('.group-node-item').length === 1) {
+                    printMsg('步骤至少需要一个节点！',2);
+                    return;
+                } else {
+    				_temp.remove();
+                }
 			});
 		});
 		
@@ -657,6 +967,7 @@ $(function($){
 		 
 		_temp.on('click','.serverip-copy-btn',function(){ 			 
 			var ipString = _temp.find('.hidden-serverip-string').val();
+			var ipList = _temp.find('.hidden-serverip-string').data('ipList');
 			var ccScriptId = _temp.find('input.cc-scriptId').last().val();	
 			var ccScriptParam = $.trim(_temp.find('.cc-param-hidden').last().text());
 			var ccScriptName = $.trim(_temp.find('.cc-name-hidden').last().text());
@@ -669,7 +980,7 @@ $(function($){
 				return ;
 			}
 			if(ipString && ipString.split(',').length>0){
-				copyIp = ipString;
+				copyIp = ipList;
 				copyScriptId= 0;
 				copyScriptName = copyScriptParam = '';
 				printMsg('已复制'+ipString.split(',').length+'条IP记录',1);
@@ -679,7 +990,7 @@ $(function($){
 		});
 		// 粘贴
 		_temp.on('click','.serverip-paste-btn',function(){
-			if(copyScriptId || (copyIp && copyIp.split(',').length>0)){ 
+			if(copyScriptId || (copyIp && copyIp.length>0)){ 
 				  _temp.find('.iplist').createServerIp({
 		            	width:'700px', 
 		            	ipListString:copyIp,
@@ -805,7 +1116,9 @@ $(function($){
     
 	function saveTask(runFlag){
 		$('.popover').removeClass('in');
-        var  data = getAllData();
+        var data = getAllData(true);
+        dataSteps = data.steps;
+        //console.log(dataSteps);
 		$('.popover').each(function(i){
 			if($(this).hasClass('in')){
 				$(this).scrollGotoHere();
@@ -834,7 +1147,7 @@ $(function($){
 					data.steps[haveSameNameStep[i]].fileTargetPath += '/[FILESRCIP]/';
 				}
 				 taskExecuteAction(data,runFlag);
-			 })
+			 });
 		}else{
 			var allRepeatName=[],repeatNameStep =[],repeat = [];
 			for(var i=0,len=data.steps.length;i<len;i++){
@@ -858,7 +1171,7 @@ $(function($){
 						data.steps[repeatNameStep[i]].fileTargetPath += '/[FILESRCIP]/';
 					}
 					taskExecuteAction(data,runFlag);
-				})
+				});
 			}else{
 				taskExecuteAction(data,runFlag);
 			}
@@ -871,9 +1184,9 @@ $(function($){
 		$.load();
 		$.ajax({
             type : 'POST',
-            url : basePath + 'nm/jobs/taskAction/saveTask.action',
+            url : basePath + 'nm/jobs/jobsAction!saveTask.action',
             dataType : 'json',
-            data : JSON.stringify(_data),
+            data : _data,
             success : function(result) {
                 if(result.success){
                     if(runFlag){
@@ -897,6 +1210,7 @@ $(function($){
                             }
                         });
                         printMsg('保存成功！', 1);
+                        oldTaskEditContent = JSON.stringify(getAllData(false));
                     }
                 }else{
                     printMsg(result.msg.message,result.msg.msgType);
@@ -931,216 +1245,6 @@ $(function($){
 		}
 		return repeat; 
 	}
-	//获取所有保存值
-	function getAllData(){
-        
-		var taskId = $('#taskId').val() || 0;
-		var taskName = $.trim($('#task-name').val());
-		if(!taskName) {			
-			$('#task-name').popover({"viewport":false});
-			$('#task-name').popover('show');  
-			return false;
-		}
-		
-		var _group = $('#group-ul'); //组
-		var stepDataList = [];
-		if(_group.find('.group-li').length>0){
-			$.each(_group.find('.group-li'),function(i,g_li){
-                var stepData = getOneStepData(i+1,$(g_li));
-                if(stepData.length>0){
-    				stepDataList = stepDataList.concat(stepData);
-                }else{
-                    stepDataList = [];  
-                    return false;
-                }
-			});
-		};
-        
-        if(stepDataList.length<=0){
-            return false;
-        }
-        
-		//排序
-		 $.each(stepDataList,function(i,e){
-			 stepDataList[i].ord = i+1;
-         });
-		
-		 return {
-			 taskId : taskId,
-			 name : taskName,
-			 steps : stepDataList
-		 };
-	};
-	//获取每一步骤的值
-	function getOneStepData(ord,_g_li){
-		if(!_g_li)return false;
-		var _node_ul =  _g_li.find('.group-node-ul');
-		var blockName_obj = _node_ul.find('.group-name-input');
-		var blockName = $.trim(blockName_obj.val());
-		if(!blockName) {
-			blockName_obj.popover({'viewport':false});			
-        	blockName_obj.popover('show');  
-        	return false;
-		}
-		var blockType = _node_ul.find('.group-type-input').val();
-		var blockOrd = ord;
-		var stepData = [];
-		$.each(_node_ul.find('.group-node-item'),function(i,item){
-            var nodeData = getNodeData($(item),blockName,blockOrd,blockType);
-            if(nodeData){
-			     stepData.push(nodeData);
-            }else{
-                stepData = [];
-                return false;
-            }
-		});
-		return stepData;
-	};
-	
-	function getNodeData(_item,blockName,blockOrd,blockType){
-		var _node_table = _item.find('.group-node-table');
-		var stepId = ""==_node_table.find('input.step_id').val()?0:_node_table.find('input.step_id').val();
-		var type = blockType;
-		var ord = null;
-		var name_obj = _node_table.find('.step_name_input');
-		var name = $.trim(name_obj.val());
-		
-		var account_obj = _node_table.find('.step_accout_sel');
-		var account = $.trim(account_obj.val());
-		var ipList = $.trim(_node_table.find('.hidden-serverip-string').val());
-		var serverSetId = _node_table.find('.hidden-serverSetId').val();
-		var ccScriptId = _node_table.find('.cc-scriptId').last().val();
-		var ccScriptParam = $.trim(_node_table.find('.cc-param-hidden').last().text());
-        var isPause = _node_table.find('input[name=stop-after-step]:checked').length>0?1:0;
-        var text = _node_table.find('.step_text_input').val();
-        
-//        校验位置：
-//        未校验成功返回 return false;
-        if (!name) {
-        	name_obj.popover({"viewport":false});
-        	name_obj.popover('show');  
-        	return false;
-        } 
-        if(!account) {
-        	account_obj.popover({"viewport":false});
-        	account_obj.popover('show');  
-        	return false;
-        }  
-		var nodeData = null; 
-        nodeData={
-            stepId : stepId,
-            type : type,
-            blockOrd : blockOrd,
-            blockName : blockName,
-            ord : ord,
-            name : name,
-            account : account,
-            ipList : ipList,
-            serverSetId : serverSetId,
-            isPause: isPause,
-            text : text,
-            ccScriptId : ccScriptId || 0,
-            ccScriptParam : ccScriptParam,
-        }
-		if(blockType==1){
-			var scriptType = _node_table.find('.hidden-scriptCodeType').val();
-			var scriptContent = $.trim(_node_table.find('.hidden-scriptCode-content').val());
-			var scriptParam = _node_table.find('.step_param_input').val();
-			var paramType = _node_table.find('.step_paramType:checked').length>0?2:1;
-	        if (!scriptContent) {
-	        	_node_table.find('tr.tag-tr').removeClass('none');
-	        	var scriptContent_obj = _node_table.find('.code-cont');
-	        	scriptContent_obj.attr("data-content", "必填项");
-	        	account_obj.popover({"viewport":false});
-	        	scriptContent_obj.popover('show');  
-	        	return false;
-	        }
-            nodeData['scriptType'] = scriptType;
-            nodeData['scriptContent'] = scriptContent;
-            nodeData['scriptParam'] = scriptParam;
-            nodeData['paramType'] = paramType;
-		}else if (blockType==2){
-			var fileTargetPath = $.trim(_node_table.find('.step_param_input').val());
-			var fileSource = $.trim(_node_table.find('.fileSource').val());
-			var stepPath_obj = _node_table.find('.step_path_input').find('input');
-			
-	        if (!fileTargetPath) {
-	        	stepPath_obj.popover({"viewport":false});
-	        	stepPath_obj.popover('show');  
-	        	return false;
-	        }
-	        var validFilePath = validPaths(fileTargetPath);
-			if(validFilePath !== true){
-				stepPath_obj.attr('data-content',validFilePath);
-				stepPath_obj.popover({"viewport":false});
-	        	stepPath_obj.popover('show');  
-				return false;
-			}
-        	var fileSource_obj = _node_table.find('.file-table');
-	        if(!fileSource) {
-	        	_node_table.find('tr.tag-tr').removeClass('none');
-	        	fileSource_obj.attr("data-content", "必填项");
-	        	fileSource_obj.popover({"viewport":false});
-	        	fileSource_obj.popover('show'); 
-	        	return false;
-	        }else{
-	        	if(fileSource_obj.find('tr').length>2){
-	        		var noSave = false;
-					$.each(fileSource_obj.find('tr:not(.blankTr)'),function(i,opt){
-						if($(opt).find('.f_save').hasClass('none')){
-							_node_table.find('tr.tag-tr').removeClass('none');
-							$(opt).find('.saveFile').scrollGotoHere();
-							$(opt).css({backgroundColor : '#ddd'});
-							$(opt).stop();
-							$(opt).animate({
-								'backgroundColor' : '#fff'
-							},2000)
-							noSave = true;
-							return false;
-						}
-					});
-					if(noSave){
-						printMsg('数据未保存！',2);
-						return false;
-					}
-				}
-	        }
-            nodeData['fileTargetPath'] = fileTargetPath;
-            nodeData['fileSource'] = fileSource;
-		}
-		if(!ipList && !ccScriptId) {
-        	_node_table.find('tr.tag-tr').removeClass('none');
-        	var iplist_btn_obj = _node_table.find('.iplist').find('.showModel');
-        	iplist_btn_obj.attr("data-content", "必填项");
-        	iplist_btn_obj.popover({"viewport":false});
-        	iplist_btn_obj.popover('show');  
-        	return false;
-        }
-        if (blockType==2) {
-            var ipDestArray = ipList.split(',');
-            var fileSource = nodeData['fileSource'];
-            var fileSrcObj = eval(fileSource);
-            for (var i = 0; i < fileSrcObj.length; i++){
-                var ipListSrc = fileSrcObj[i].ipList;
-                if (ipListSrc) {
-                    var ipArraySrc = ipListSrc.split(',');
-                    for (var j = 0; j < ipArraySrc.length; j++) {
-                        for (var k = 0; k < ipDestArray.length; k++) {
-                            if (ipDestArray[k] == ipArraySrc[j]) {
-                                var iplist_btn_obj = _node_table.find('.iplist').find('.showModel');
-                                iplist_btn_obj.attr("data-content", "文件传输，禁止从本机传本机，IP：" + ipDestArray[k].replace(/^.*:/,''));
-                                iplist_btn_obj.popover({"viewport":false});
-                                iplist_btn_obj.popover('show');
-                                return false;
-                            }
-                        }
-                    }
-                }
-          } 
-        }
-		return nodeData;
-	}
-    
     
     //设置所有值
     function setAllData(data){
@@ -1165,8 +1269,7 @@ $(function($){
             scriptInit(_li,steps);
             $.each(steps,function(i,step){
                 setScriptNodeData(_li,step);
-            })
-           
+            });
         }else if(block.type==2){
             var _temp_f = $('#file-template');//文件模版
             var _block = $('<div class="ijobs-block ijobs-block-w" block-type="2">'+block.blockName+'</div>');
@@ -1179,7 +1282,7 @@ $(function($){
             fileInit(_li,steps);
             $.each(steps,function(i,step){
                 setFileNodeData(_li,step);
-            })
+            });
         }
          _group.find('tr.tag-tr').addClass('none');
     };
@@ -1234,15 +1337,29 @@ $(function($){
     
     //编辑作业返回按钮
     $('#returnBtn').click(function(){
-    	if(extraObj.historytype === 5){
-    		createNewTab('移动作业列表', './app/mJobList.jsp', '移动端作业管理');
-    	}else{
-    		createNewTab('作业执行', './app/jobList.jsp', '作业执行',extraObj);
-    	}
+    	if(JSON.stringify(getAllData(false)) != oldTaskEditContent){
+    		var r = confirm("您所编辑的作业尚未保存，是否确定离开？");
+    		if (r == true) {
+		    	if(extraObj.historytype === 5){
+		    		createNewTab('移动作业列表', './app/mJobList.jsp', '移动端作业管理');
+		    	}else{
+		    		createNewTab('作业执行', './app/jobList.jsp', '作业执行',extraObj);
+		    	}
+    		}
+		} else {
+			if(extraObj.historytype === 5){
+	    		createNewTab('移动作业列表', './app/mJobList.jsp', '移动端作业管理');
+	    	}else{
+	    		createNewTab('作业执行', './app/jobList.jsp', '作业执行',extraObj);
+	    	}			
+		}
     });
   //初始化页面时直接调用
    (function(){
-		if(havePropInObj(extraObj)){//判断扩展参数是否存在
+	   semaphore.reset();
+	   initing = true;
+	   $.load();
+	   if(havePropInObj(extraObj)){//判断扩展参数是否存在
 			if(extraObj.historytype != 3){//如果为新建作业预览返回泽不显示返回按钮
 				 $('#returnBtn').removeClass('none');
 			}
@@ -1250,8 +1367,7 @@ $(function($){
 				if(extraObj.type==='edit'){//编辑作业
 					$.ajax({
 		                type : 'post',
-                        contentType : 'application/x-www-form-urlencoded',
-		                url : basePath + "nm/jobs/taskAction/getTaskDetail.action",
+		                url : basePath + "nm/jobs/jobsAction!getTaskDetail.action",
 		                dataType : 'json',
 		                data : {
 		                    taskId : extraObj.taskId
@@ -1273,8 +1389,7 @@ $(function($){
 				}else{
 					$.ajax({
 		                type : 'post',
-                        contentType : "application/x-www-form-urlencoded",
-		                url : basePath + "/nm/jobs/taskAction/cloneTask.action",
+		                url : basePath + "/nm/jobs/jobsAction!cloneTask.action",
 		                dataType : 'json',
 		                data : {
 		                    taskId : extraObj.taskId
@@ -1317,9 +1432,9 @@ $(function($){
         			var a = _block_list.eq(sortIndex);
         			var b = _block_list.eq(index);
         			if(sortIndex>index){
-        				b.before(a)
+        				b.before(a);
         			}else{
-        				b.after(a)
+        				b.after(a);
         			}
         			var temp = a.text();
         			a.text(b.text());
@@ -1328,33 +1443,4 @@ $(function($){
         	}
         });
 	})();
-/*    $('#task-name').blur(function(){
-    	var _my = $(this);
-       
-        if(!_my.val()) {
-        	_my.attr("data-content", "必填项").scrollGotoHere();
-        	_my.popover('show').addClass('form-bg-danger').parent().parent('.form-group').addClass('has-error');  
-        	return;
-        }
-        
-        $.ajax({
-                type : 'POST',
-                url : basePath+'nm/jobs/taskAction/checkName.action',
-                dataType : 'json',
-                data : {
-                    name:_my.val(),
-                    category:'task'
-                },
-                success : function(result) { 
-                    if (result.success){
-                    	_my.attr("data-content", '');          
-                    	_my.removeClass('form-bg-danger').parent().parent('.form-group').removeClass('has-error');
-                    } else{
-                    	_my.attr("data-content",result.msg.message);          
-                    	_my.popover('show').addClass('form-bg-danger').parent().parent('.form-group').addClass('has-error');
-                    }
-                }
-            });
-    });*/
-    
 });

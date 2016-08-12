@@ -19,7 +19,7 @@ $(function($){
             $.ajax({
                 type : 'POST',
                 contentType : 'application/x-www-form-urlencoded',
-                url : basePath+'nm/components/accountAction/saveAccount.action',
+                url : 'nm/components/accountAction/saveAccount.action',
                 dataType : 'json',
                 data:{
                     account:userName
@@ -70,7 +70,7 @@ $(function($){
             }
         },
         defalutProgress : true,
-        saveUrl:basePath+'nm/components/uploadAction/uploadScript.action'
+        saveUrl:'nm/components/uploadAction/uploadScript.action'
     });
     
     
@@ -93,7 +93,7 @@ $(function($){
     function getJobScriptListByAppSelect(){
         $.ajax({
               contentType:'application/json',              
-              url: basePath+"nm/components/scriptAction/getScriptList.action",            
+              url: "nm/components/scriptAction/getScriptList.action",            
               dataType:'json',            
               success: function(reponseText){
                   var inner = '';
@@ -108,7 +108,7 @@ $(function($){
                       $.ajax({
                           type : 'post',
                           contentType:'application/x-www-form-urlencoded',
-                          url: basePath+"nm/components/scriptAction/getScriptContent.action",             
+                          url: "nm/components/scriptAction/getScriptContent.action",             
                           dataType:'json',
                           data:{
                               scriptId : scriptId
@@ -175,7 +175,7 @@ $(function($){
         $.load();
         $.ajax({
               contentType:'application/x-www-form-urlencoded',
-              url: basePath+"nm/jobs/taskExecuteAction/fastExecuteScript.action",
+              url: "nm/jobs/taskExecuteAction/fastExecuteScript.action",
               dataType:'json',
               data:{
                   content : content,

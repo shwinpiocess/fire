@@ -4,8 +4,8 @@
 $(function($){
      var doStepOperation = function(stepInstanceId, operationCode, taskInstanceId, newMd5){
         $.ajax({
-          contentType:'application/x-www-form-urlencoded',
-          url: basePath+"nm/jobs/taskExecuteAction/doStepOperation.action",
+          type : 'post',
+          url: basePath+"nm/jobs/taskExecuteAction!doStepOperation.action",
           dataType:'json',
           data:{
               stepInstanceId:stepInstanceId,
@@ -26,8 +26,7 @@ $(function($){
 	var getTaskResult = function(taskInstanceId,md5){
 		$.ajax({
 			type : 'POST',
-			contentType:'application/x-www-form-urlencoded',
-			url : basePath + 'nm/jobs/taskResultAction/getTaskResult.action',
+			url : basePath + 'nm/jobs/taskResultAction!getTaskResult.action',
 			dataType : 'json',
 			data : {
 				taskInstanceId : taskInstanceId,
@@ -170,9 +169,9 @@ $(function($){
 		_data['length'] = 100;
 		$.ajax({
 			type : 'POST',
-			url : basePath+'nm/jobs/taskResultAction/searchTaskResultList.action',
+			url : basePath+'nm/jobs/taskResultAction!searchTaskResultList.action',
 			dataType : 'json',
-			data : JSON.stringify(_data),
+			data : _data,
 			success : function(result) {
 				var data = result.data;
 				if(data){
@@ -188,11 +187,16 @@ $(function($){
 					$('#taskSelect').chosen({width:'250px'});
 				}
 			}
-		});
+		})
 	}
-	$('#taskSelect').change(function(){
-		createNewTab('作业实例', './app/taskDetail.jsp', '执行详情',extraObj);
-	});
+	// $('#taskSelect').change(function(){
+	// 	createNewTab('作业实例', './app/taskDetail.jsp', '执行详情',extraObj);
+	// });
+  $('#taskSelect').on('change',function(){
+    extraObj.taskInstanceId = $(this).val();
+    createNewTab('作业实例', './app/taskDetail.jsp', '执行详情',extraObj);
+  });
+
 	$('#returnBtn').click(function(){
 		if(havePropInObj(extraObj) && extraObj.historytype){
 			if(extraObj.historytype<=1){
@@ -218,7 +222,7 @@ $(function($){
 			if(extraObj.historytype>1){
 				$('#taskSelect').remove();
 			}else{
-				initTaskList(extraObj.taskInstanceId, extraObj.searchdata);
+				initTaskList(extraObj.taskInstanceId,extraObj.searchdata);
 			}
 		}
 	})();

@@ -35,13 +35,11 @@
 		$('#creater').val('');
 		$('#createDateStart').val('');
 		$('#createDateEnd').val('');
-	});
-	
+	})
 	$('#findBtn').click(function(){
-		searchResult(getSearchData());
-	});
-	
-	function getSearchData(){
+		serachResult(getserachData());
+	})
+	function getserachData(){
 		var name =  $.trim($('#name').val());
 		var creater =  $.trim($('#creater').val());
 		var createDateStart = $('#createDateStart').val();
@@ -51,21 +49,20 @@
 				creater:creater,
 				createTimeStart:createDateStart,
 				createTimeEnd:createDateEnd			 
-		};
+		}
 		return data;
-	};
-	
+	}
 	$('.form-inline').keydown(function(event){
 		if(event.keyCode == 13){
-			searchResult(getSearchData());
+			serachResult(getserachData());
 		}
 	});
-	function searchResult(data){
+	function serachResult(data){
 	  var language = {
 		        search: '全局搜索：',
 		        lengthMenu: "每页显示 _MENU_ 记录",
 		        zeroRecords: "没找到相应的数据！",
-		        info: "分页 _PAGE_ / _PAGES_",
+		        info: "第 _PAGE_ 页 / 共 _PAGES_ 页&nbsp;&nbsp;每页显示 10 条&nbsp;&nbsp;共 _TOTAL_ 条",
 		        infoEmpty: "",
 		        infoFiltered: "(从 _MAX_ 条数据中搜索)",
 		        paginate: {
@@ -86,20 +83,10 @@
 			 searching:false,
 			 pagingType:'input',
 			 ajax:{
-				 type : "POST",
-				 contentType:'application/json',
-				 data : function(d){
-					 if(data){
-						 data.draw = d.draw;
-						 data.start = d.start;
-						 data.length = d.length;
-						 return JSON.stringify(data);
-					 } else {
-						 return '{}';
-					 }
-				 },
-				 url : basePath+'nm/components/scriptAction/getScriptList.action',				 
-				 error :function(e){
+				 "type": "POST",
+				 "data": data,
+				 "url": basePath+'nm/components/scriptAction!getScriptList.action',				 
+				 "error":function(e){
 						ajaxError(e);					 
 				 }
 			 },		 
@@ -114,7 +101,9 @@
 			                data:null,
 			                orderable:false,
 			                render : function(data, type, row, meta){
+			                	var /*btnGroup ='<a class="king-btn king-default king-btn-mini" title="查看作业引用">查看作业引用</a>';*/
 			                	btnGroup = '<div class="btn-list" style="min-width:120px;"><a class="king-btn king-primary king-btn-mini edit" title="编辑">编辑</a>';
+			                	btnGroup += '<a  class="king-btn king-primary king-btn-mini dotask" title="去执行">去执行</a>'
 			                	btnGroup += '<a  class="king-btn king-danger king-btn-mini del" title="删除">删除</a></div>';
 			                    return btnGroup;
 			                }
@@ -124,14 +113,14 @@
 		 }); 
 		
 		$("#resultTable tbody").on('click', 'a.del', function(){
-			var t = $("#resultTable").DataTable();
+			var t = $("#resultTable").DataTable();//注意大小写
 			var row = t.row($(this).parents('tr')), //获取按钮所在的行
 			data = row.data();
-			var scriptId = data.id;
+			var scriptId = data.scriptId;
 			confirmModal('提示','是否删除该脚本',function(){
 				$.ajax({
-					contentType:'application/x-www-form-urlencoded',
-					url : basePath+'nm/components/scriptAction/deleteScript.action',
+					type : 'POST',
+					url : basePath+'nm/components/scriptAction!deleteScript.action',
 					dataType : 'json',
 					data:{
 						scriptId:scriptId
@@ -147,21 +136,27 @@
 				});
 			});			
 		});	
-		 
+		$("#resultTable tbody").on('click', 'a.dotask', function(){
+			var t = $("#resultTable").DataTable();//注意大小写
+			var row = t.row($(this).parents('tr')), //获取按钮所在的行
+			data = row.data();
+			createNewTab('快速脚本执行', './app/fastExecuteScript.jsp', '作业执行',{
+				 scriptId : data.scriptId
+		    }); 
+		});	
 		$("#resultTable tbody").on('click', 'a.edit', function(){	
-			var t = $("#resultTable").DataTable();
+			var t = $("#resultTable").DataTable();//注意大小写
 			var row = t.row($(this).parents('tr')), //获取按钮所在的行
 			data = row.data(); 
 			$('#scriptName').val(htmlDecode(data.name));
-			$('#scriptId').val(data.id);
+			$('#scriptId').val(data.scriptId);
 			$('#myModalLabel').html("编辑脚本");
 			$.ajax({
 				  type : 'post',
-                  contentType:'application/x-www-form-urlencoded',
-				  url: basePath+"nm/components/scriptAction/getScriptContent.action",			  
+				  url: basePath+"nm/components/scriptAction!getScriptContent.action",			  
 				  dataType:'json',
 				  data:{
-					  scriptId : data.id
+					  scriptId : data.scriptId
 				  }, 
 				  success: function(result){
 				  	if(result.success){
@@ -230,22 +225,24 @@
 	getJobScriptListByAppSelect();
 	function getJobScriptListByAppSelect(){
 		$.ajax({
-			  contentType:'application/json',
-			  url: basePath+"nm/components/scriptAction/getScriptList.action",			  
+			  type : 'post',
+			  url: basePath+"nm/components/scriptAction!getScriptList.action",			  
 			  dataType:'json',
+			  data:{
+				  applicationId : APPID
+			  },
 			  success: function(reponseText){
 				  var inner = '<option></option>';
 				  var data = reponseText.data; 
 				  for(var i=0;i< data.length;i++){
-					  inner += '<option value="'+data[i].id+'">'+data[i].name+'</option>';					 
+					  inner += '<option value="'+data[i].scriptId+'">'+data[i].name+'</option>';					 
 				  }
 				  $('#cmbScript').append(inner);
 				  $('#cmbScript').chosen({width:'427px'}).change(function(){
 					  var scriptId = $('#cmbScript').val();						
 					  $.ajax({
 						  type : 'post',
-                          contentType:'application/x-www-form-urlencoded',
-						  url: basePath+"nm/components/scriptAction/getScriptContent.action",			  
+						  url: basePath+"nm/components/scriptAction!getScriptContent.action",			  
 						  dataType:'json',
 						  data:{
 							  scriptId : scriptId
@@ -294,33 +291,30 @@
 			}
 		},
 		defalutProgress : true,
-		saveUrl : basePath + 'nm/components/uploadAction/uploadScript.action'
+		saveUrl : basePath + 'nm/components/uploadAction!uploadScript.action'
 	});
 	$('#scriptSaveBtn').click(function(){
-		var scriptId = $('#scriptId').val();		
+		var scriptId = $('#scriptId').val();
 		var name = 	$('#scriptName').val();
-		var type =	parseInt(codeMir.getType());
+		var type =	codeMir.getType();
 		var content= codeMir.getValue();
-		
-        var data = {		     	
-			name : name,
-			type : type,
-			content : content
-	    };
-		if(scriptId != ''){
-			data.id =  parseInt(scriptId);
-		}
-		
+		 
 		$.ajax({
-			  contentType:'application/json',
-			  url : basePath+"nm/components/scriptAction/saveScript.action",
-			  dataType :'json',
-			  data : JSON.stringify(data),
+			  type : 'post',
+			  url: basePath+"nm/components/scriptAction!saveScript.action",
+			  dataType:'json',
+			  data:{
+				  scriptId:scriptId,
+				  name:name,
+				  type:type,
+				  content:content
+			  },
 			  success: function(reponseText){
+
 				  if(reponseText.success){
 					  printMsg(reponseText.msg.message,1);
 					  $('#editScript').modal('hide');
-					  searchResult();
+					  serachResult();
 				  }else{
 					  printMsg(reponseText.msg.message,2);
 				  }

@@ -29,6 +29,14 @@
         <link href="{% static 'job/css/ijobs.css' %}" rel="stylesheet">
         <script type="text/javascript">
             var isNewUser = false;
+            var CsrfKey = '{{csrf_token}}';
+            var statueArr = ['等待执行','正在执行','执行成功','执行失败','跳过','忽略错误','等待用户','手动结束','状态异常','步骤强制终止中','步骤强制终止成功','步骤强制终止失败'];
+            var maintainers = 'maintainers_placeholder';
+            var maintainers = 'admin';
+            // 状态： 0.系统错误、1.Agent 异常、3.上次已成功、5.等待执行、7.正在执行、9.执行成功、11.执行失败、13.任务超时、15.任务日志错误、101.脚本执行失败、102.脚本执行超时、202.拷贝文件失败
+            var ipErrorType = [0,1,11,13,15,101,102,202];
+            var extraObj = {}; //扩展参数，误删
+            var sourceArr = {};//平台名称
         </script>
     </head>
 
@@ -80,7 +88,7 @@
                 <section class="king-sidebar" style="height: auto;">
                     <ul class="king-sidebar-menu">
                          <li class="treeview">
-                         <a href="./app/main.jsp" class="home" id="home">
+                         <a href="/static/job/app/main.jsp" class="home" id="home">
                          <i class="fa fa-home"></i>
                          <span>首页</span>
                          </a>
@@ -93,23 +101,23 @@
                             </a>
                             <ul class="treeview-menu" style="background: #1C2026;">
                                 <li>
-                                    <a href="./app/fastExecuteScript.jsp">
+                                    <a href="/static/job/app/fastExecuteScript.jsp">
                                         <i class="fa"></i>快速脚本执行</a>
                                 </li>
                                 <li>
-                                    <a href="./app/fastPushFile.jsp">
+                                    <a href="/static/job/app/fastPushFile.jsp">
                                         <i class="fa"></i>快速分发文件</a>
                                 </li>
                                 <li>
-                                    <a href="./app/jobList.jsp">
+                                    <a href="/static/job/app/jobList.jsp">
                                         <i class="fa"></i>常用作业执行</a>
                                 </li>
                                 <li>
-                                    <a href="./app/newTask.jsp">
+                                    <a href="/static/job/app/newTask.jsp">
                                         <i class="fa"></i>新建作业</a>
                                 </li>
                                 <li>
-                                    <a href="./app/crontabTaskList.jsp">
+                                    <a href="/static/job/app/crontabTaskList.jsp">
                                         <i class="fa"></i>定时作业</a>
                                 </li>
                             </ul>
@@ -122,15 +130,15 @@
                             </a>
                             <ul class="treeview-menu" style="background: #1C2026;">
                                 <li>
-                                    <a href="./app/userList.jsp">
+                                    <a href="/static/job/app/userList.jsp">
                                         <i class="fa"></i>账户管理</a>
                                 </li>
                                 <li>
-                                    <a href="./app/scriptList.jsp">
+                                    <a href="/static/job/app/scriptList.jsp">
                                         <i class="fa"></i>脚本管理</a>
                                 </li>
                                 <li>
-                                    <a href="./app/groupList.jsp">
+                                    <a href="/static/job/app/groupList.jsp">
                                         <i class="fa"></i>分组管理</a>
                                 </li>
                             </ul>
@@ -143,7 +151,7 @@
                             </a>
                             <ul class="treeview-menu" style="background: #1C2026;">
                                 <li>
-                                    <a href="./app/taskInstanceList.jsp">
+                                    <a href="/static/job/app/taskInstanceList.jsp">
                                         <i class="fa"></i>执行历史</a>
                                 </li>
                             </ul>
@@ -205,7 +213,6 @@
         <!-- confirmModal start 勿删 -->
     
         <!-- 如果要使用Bootstrap的js插件，必须先调入jQuery -->
-        <script src="{% static 'job/vendor/jquery.js' %}"></script>
         <script src="{% static 'job/vendor/jquery-1.10.2.min.js' %}"></script>
         <script src="{% static 'job/vendor/jquery.i18n.properties.min.js' %}"></script>
         <script src="{% static 'job/vendor/jqueryUI/jquery-ui.min.js' %}"></script>

@@ -1,7 +1,8 @@
 (function(){
 	$('#resetBtn').click(function(){
-		$('#name,#creater,#createDateStart,#createDateEnd').val(null)
+		$('#name,#creater,#createDateStart,#createDateEnd').val(null);
 	});
+	$('[data-toggle="tooltip"]').tooltip();
 	
 	$("#allCheckBox").click(function () { 
 		$('input[name="chItem"]').prop("checked",this.checked);
@@ -19,7 +20,7 @@
 	});
 	
 	$('#findBtn').click(function(){			
-		searchResult(getSearchData());
+		serachResult(getserachData());
 	});
 	 $('#createDateStart').datepicker({
 	    	dateFormat : 'yy-mm-dd',
@@ -44,41 +45,41 @@
 	        }
 	       
 	    });
-    function getSearchData(){
+    function getserachData(){
     	var name = $.trim($('#name').val());
 		var creater = $.trim($('#creater').val());
 		var createDateStart = $('#createDateStart').val();
 		var createDateEnd = $('#createDateEnd').val();
 		
 		var data = {
-				account:name,				 
-				creater:creater,
-				createTimeStart:createDateStart,
-				createTimeEnd:createDateEnd
+			account:name,				 
+			creater:creater,
+			createTimeStart:createDateStart,
+			createTimeEnd:createDateEnd
 		};
     	return data;
     }
     $('#name,#creater,#createDateStart,#createDateEnd').keydown(function(event){
 		if(event.keyCode == 13){
-			searchResult(getSearchData());
+			serachResult(getserachData());
 		}
 	});
     
-	function searchResult(data){
+	function serachResult(data){
 	  var language = {
-		        search: '全局搜索：',
-		        lengthMenu: "每页显示 _MENU_ 记录",
-		        zeroRecords: "没找到相应的数据！",
-		        info: "分页 _PAGE_ / _PAGES_",
-		        infoEmpty: "",
-		        infoFiltered: "(从 _MAX_ 条数据中搜索)",
-		        paginate: {
-		        	first: '|<',
-		            last: '>|',
-		            previous: '<<',
-		            next: '>>'
-		        }
-		    };
+        search: '全局搜索：',
+        lengthMenu: "每页显示 _MENU_ 记录",
+        zeroRecords: "没找到相应的数据！",
+        info: "第 _PAGE_ 页 / 共 _PAGES_ 页&nbsp;&nbsp;每页显示 10 条&nbsp;&nbsp;共 _TOTAL_ 条",
+        infoEmpty: "",
+        infoFiltered: "(从 _MAX_ 条数据中搜索)",
+        paginate: {
+        	first: '|<',
+            last: '>|',
+            previous: '<<',
+            next: '>>'
+        }
+    };
 	    $('#resultTable>tbody').remove();
 		$('#resultTable').DataTable({
 			 bLengthChange: false,
@@ -90,20 +91,10 @@
 			 searching:false,
 			 pagingType:'input',
 			 ajax:{
-				 type : 'POST',
-				 contentType : 'application/json',
-				 data: function(d){
-					 if(data){
-						 data.draw = d.draw;
-						 data.start = d.start;
-						 data.length = d.length;
-						 return JSON.stringify(data);
-					 } else {
-						 return '{}';
-					 }
-				 },
-				 url: basePath+'nm/components/accountAction/searchAccountList.action',
-				 error:function(e){
+				 "type": "POST",
+				 "data": data,
+				 "url": basePath+'nm/components/accountAction!searchAccountList.action',
+				 "error":function(e){
 						ajaxError(e);					 
 				 }
 			 },		
@@ -149,7 +140,7 @@
 					}else{
 						checkFlag = false;
 					}
-				})
+				});
 				if(checkFlag){
 					$('#batchDel').prop('disabled',false);
 				}else{
@@ -161,9 +152,9 @@
 	
 	$('#batchDel').click(function(){
 		var checkeds=$('input[name="chItem"]:checked');
-		var ids = []
+		var ids = [];
 		checkeds.each(function(index,value){
-			ids.push(value.id)
+			ids.push(value.id);
 		});
 		if(ids.length>0){
 			confirmModal('提示','是否删除所选用户',function(){
@@ -181,8 +172,7 @@
 		}
 		$.ajax({
 			type : 'POST',
-            contentType : 'application/x-www-form-urlencoded',
-			url : basePath+'nm/components/accountAction/saveAccount.action',
+			url : basePath+'nm/components/accountAction!saveAccount.action',
 			dataType : 'json',
 			data:{
 				account:userName
@@ -191,7 +181,7 @@
 				if(result.success){
 					printMsg(result.msg.message,1);
 					$('#newUserName').val(null);
-					searchResult();
+					serachResult();
 				}else{
 					printMsg(result.msg.message,2);
 					$('#newUserName').focus();
@@ -204,8 +194,8 @@
 	function delUserAjax(account){
 		if(account){
 			$.ajax({
-				contentType:'application/x-www-form-urlencoded',
-				url : basePath+'nm/components/accountAction/deleteAccount.action',
+				type : 'POST',
+				url : basePath+'nm/components/accountAction!deleteAccount.action',
 				dataType : 'json',
 				data:{
 					account:account

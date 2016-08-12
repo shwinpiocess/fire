@@ -21,8 +21,8 @@ $("#script-slide-panel .btn-return").on('click',function (){
 var getLogContentByIp = function(ip,stepInstanceId,retryCount,searchText){
 	 $('#logContent').parent().divLoad('show');	
      $.ajax({
-    	  contentType:'application/x-www-form-urlencoded',
-          url: basePath+"nm/jobs/taskResultAction/getLogContentByIp.action",
+          type : 'post',
+          url: basePath+"nm/jobs/taskResultAction!getLogContentByIp.action",
           dataType:'json',
           data:{
               stepInstanceId:stepInstanceId,
@@ -47,7 +47,7 @@ var getLogContentByIp = function(ip,stepInstanceId,retryCount,searchText){
  				  $logContent.html(logContent);
  			  }else{
  				  $logContent.html(logContent);
- 			  } 
+ 			  }
           },
           error:function(){
         	  $('#logContent').parent().divLoad('hide');
@@ -58,7 +58,7 @@ var language = {
         search: '全局搜索：',
         lengthMenu: "每页显示 _MENU_ 记录",
         zeroRecords: "没找到相应的数据！",
-        info: "分页 _PAGE_ / _PAGES_",
+        info: "第 _PAGE_ 页 / 共 _PAGES_ 页&nbsp;&nbsp;每页显示 5 条&nbsp;&nbsp;共 _TOTAL_ 条",
         infoEmpty: "暂无数据！",
         infoFiltered: "(从 _MAX_ 条数据中搜索)",
         paginate: {
@@ -68,30 +68,76 @@ var language = {
           next: '>>',
           copy :'复制IP'
         }
-    };
- var getIpListByResultType = function(stepInstanceId,resultType,retryCount, type){
+    }
+ var getIpListByResultType = function(stepInstanceId,resultType,retryCount, type, tag){
 	$.ajax({
-		contentType:'application/x-www-form-urlencoded',
-		url : basePath+'nm/jobs/taskResultAction/getIpListByResultType.action',
+		type : 'POST',
+		url : basePath+'nm/jobs/taskResultAction!getIpListByResultType.action',
 		dataType : 'json',
 		data : {
 			stepInstanceId:stepInstanceId,
 			retryCount : retryCount,
-			resultType : resultType
+			resultType : resultType,
+			tag : tag			
 		},
 		success : function(result) {
-			 var columns;
+			 var columns
 		     if(type == 1){
 		         $('#returnCode').removeClass('none');
-		         columns = [{ "data": "ip" },{ "data": "exitCode" },
-		                        {data: null,                                
-		                            render : function(data, type, row, meta) {
-		                                 return row.totalTime.toFixed(3);
-		                            }
-		                        }];
+		         columns = [{
+	    		         	data: null,                                
+	                        render : function(data, type, row, meta) {
+	                        	var source = row.source;
+	                        	if(source&&source>0){
+	                        		 return sourceArr[row.source]||'';
+	                        	}else{
+	                        		return '';
+	                        	}
+	                        	
+                        	}
+                        },
+                        { "data": "ip" },
+                        {
+							data : null,
+							render : function(data, type, row, meta) {
+								var exitCodeDesc = [];
+								exitCodeDesc[1] = "通用错误";
+								exitCodeDesc[2] = "shell内建命令使用错误";
+								exitCodeDesc[126] = "命令调用无法执行";
+								exitCodeDesc[127] = "命令未找到";
+								exitCodeDesc[128] = "exit的参数错误";
+								exitCodeDesc[255] = "超出范围的返回码";
+
+								var exitCode = row.exitCode;
+								if (exitCodeDesc[exitCode] != undefined) {
+									var exitCodeContent = exitCode
+											+ ' <span class="fa fa-question-circle pull-right" data-toggle="tooltip" data-placement="right" title="'+exitCodeDesc[exitCode]+'"></span>';
+									return exitCodeContent;
+
+								} else {
+									return exitCode;
+								}
+							}
+						},
+		                {data: null,                                
+		                     render : function(data, type, row, meta) {
+		                          return row.totalTime.toFixed(3);
+		                     }
+		                }];
 		     }else{
 		         $('#returnCode').addClass('none');
-		         columns =[{ "data": "ip" },
+		         columns =[{
+	    		         	data: null,                                
+	                        render : function(data, type, row, meta) {
+	                        	var source = row.source;
+	                        	if(source&&source>0){
+		                              return sourceArr[row.source]||'';
+	                        	}else{
+	                        		return '';
+	                        	}
+	                        	
+                        	}
+                        },{ "data": "ip" },
 		                    {data: null,                                
 		                        render : function(data, type, row, meta) {
 		                             return row.totalTime.toFixed(3);
@@ -112,6 +158,7 @@ var language = {
 			        data : result.data,
 			        columns: columns
 			   });
+			 $('[data-toggle="tooltip"]').tooltip();
 			 $('#ipTable tbody').on('click', 'tr', function (e) {
 				 	var t = $('#ipTable').DataTable();
 	 				var curDom = $(e.currentTarget); 
@@ -140,8 +187,8 @@ var language = {
 
  var getStepExecuteDetail = function(stepInstanceId,retryCount,md5,type,name,operator){
 	 $.ajax({
-		  contentType:'application/x-www-form-urlencoded',
-		  url: basePath+"nm/jobs/taskResultAction/getStepExecuteDetail.action",
+		  type : 'post',
+		  url: basePath+"nm/jobs/taskResultAction!getStepExecuteDetail.action",
 		  dataType:'json',
 		  data:{
 			  stepInstanceId:stepInstanceId,
@@ -195,8 +242,21 @@ var language = {
 						 var $li = $('<li></li>');
 						 var $a = $('<a  data-toggle="tab" aria-expanded="false" style="cursor:pointer;"></a>')
                          var resultTypeTxt = ((data.stepAnalyseResult[i].resultTypeText == null) ? "执行失败" : data.stepAnalyseResult[i].resultTypeText);
-						 $a.text(resultTypeTxt+'('+data.stepAnalyseResult[i].count+')');
+						 
+						 var aText = resultTypeTxt + '(' + data.stepAnalyseResult[i].count + ')';
+						 if(data.stepAnalyseResult[i].tag != ''){
+						     aText = resultTypeTxt + '[' +data.stepAnalyseResult[i].tag+ '](' + data.stepAnalyseResult[i].count + ')';
+						 }
+						 var ipResultTips = [];
+						 ipResultTips[104] = '请参考下表中返回码的错误提示信息';
+						 var resultType = data.stepAnalyseResult[i].resultType;
+						 if(ipResultTips[resultType] != undefined){
+						     aText += ' <span class="fa fa-question-circle"  data-toggle="tooltip" data-placement="top" title="' + ipResultTips[resultType] + '"></span>';
+						 }
+						 $a.append(aText);
+						 
 						 $a.attr('resultType',data.stepAnalyseResult[i].resultType);
+						 $a.attr('tag',data.stepAnalyseResult[i].tag);
                          if (data.stepAnalyseResult[i].resultTypeText && data.stepAnalyseResult[i].resultTypeText.indexOf('失败') > 0) {
                             $a.addClass('text-danger');
                          } 
@@ -206,17 +266,20 @@ var language = {
 						 if(i==0){
 							$li.addClass('active');
 							$a.attr('aria-expanded',"true");
-							window.setTimeout(getIpListByResultType(stepInstanceId,data.stepAnalyseResult[0].resultType,retryCount, type), 1000);
+							window.setTimeout(getIpListByResultType(stepInstanceId,data.stepAnalyseResult[0].resultType,retryCount, type, data.stepAnalyseResult[0].tag), 1000);
 						 }
 						 $a.on('click',function(){
 							 $('div.panel-setp-detail').addClass('none');
                         	 $('div.panel-setp-result').removeClass('none');
                         	 $('#logContent').html(null);
-							 getIpListByResultType(stepInstanceId,$(this).attr('resultType'),retryCount, type);
+							 getIpListByResultType(stepInstanceId,$(this).attr('resultType'),retryCount, type, $(this).attr('tag'));
 						 })
 						 $li.append($a);
 						 $stepAnalyseResult.append($li);
 					 }
+					 $('[data-toggle="tooltip"]').tooltip();
+					 
+					 $stepAnalyseResult.append($li);
 					 if(!data.isFinished){
 						 window.setTimeout(getStepExecuteDetail(stepInstanceId,retryCount,newMd5,type,name,operator), 500);	
 					 } 
@@ -250,7 +313,18 @@ var language = {
 		 var columns
 		 if(type == 1){
 			 $('#returnCode').removeClass('none');
-			 columns = [{ "data": "ip" },{ "data": "exitCode" },
+			 columns = [{
+	    		         	data: null,                                
+	                        render : function(data, type, row, meta) {
+	                        	var source = row.source;
+	                        	if(source&&source>0){
+	                        		 return sourceArr[row.source]||'';
+	                        	}else{
+	                        		return '';
+	                        	}
+	                        	
+                        	}
+                        },{ "data": "ip" },{ "data": "exitCode" },
 			                {data: null,    		                	
 	                            render : function(data, type, row, meta) {
 	                                 return row.totalTime.toFixed(3);
@@ -258,7 +332,18 @@ var language = {
 	                        }];
 		 }else{
 			 $('#returnCode').addClass('none');
-			 columns =[{ "data": "ip" },
+			 columns =[{
+	    		         	data: null,                                
+	                        render : function(data, type, row, meta) {
+	                        	var source = row.source;
+	                        	if(source&&source>0){
+	                        		 return sourceArr[row.source]||'';
+	                        	}else{
+	                        		return '';
+	                        	}
+	                        	
+                        	}
+                        },{ "data": "ip" },
 		                {data: null,    		                	
                             render : function(data, type, row, meta) {
                                  return row.totalTime.toFixed(3);
@@ -269,8 +354,8 @@ var language = {
 		 initSearchTable(); 
 		 function initSearchTable(){
 			 $.ajax({
-				    contentType:'application/x-www-form-urlencoded',
-		    		url : basePath+'nm/jobs/taskResultAction/getIpListByLogSearch.action',
+		    		type : 'POST',
+		    		url : basePath+'nm/jobs/taskResultAction!getIpListByLogSearch.action',
 		    		dataType : 'json',
 		    		data:{ 
 						stepInstanceId:stepInstanceId,

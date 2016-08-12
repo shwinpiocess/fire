@@ -1,19 +1,24 @@
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie != '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = $.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                cookieValue = decodeURIComponent(
-                cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
+var statueColor = [];
+statueColor[1] = 'label-default';
+statueColor[2] = 'label-primary';
+statueColor[3] = 'label-success';
+statueColor[4] = 'label-danger';
+statueColor[6] = 'label-warning';
+statueColor[7] = 'label-info';
+var currentPage;
+
+if (typeof String.prototype.startsWith != 'function') {
+  String.prototype.startsWith = function (prefix){
+    return this.slice(0, prefix.length) === prefix;
+  };
 }
+
+if (typeof String.prototype.endsWith != 'function') {
+  String.prototype.endsWith = function(suffix) {
+    return this.indexOf(suffix, this.length - suffix.length) !== -1;
+  };
+}
+
 /**
  * 本文件定义一些通用的方法 
  */
@@ -22,17 +27,10 @@ $.ajaxSetup({
 	type : 'POST', //默认请求方式为post
 	timemout : 180000, //默认请求超时时间
 	beforeSend : function(xhr){
-        var csrftoken;
-        if (!this.crossDomain) {
-            // Send the token to same-origin, relative URLs only.
-            // Send the token only if the method warrants CSRF protection
-            // Using the CSRFToken value acquired earlier
-            csrftoken = getCookie('csrftoken');
-            xhr.setRequestHeader('X-CSRFToken', csrftoken);
-        }
+		xhr.setRequestHeader('X-CSRFToken', CsrfKey);
+        xhr.setRequestHeader('APPID', APPID);
 	},
-    contentType : 'application/json',
-	error : function(e, b, c){ //默认ajax错误时的处理
+	error : function(e){ //默认ajax错误时的处理
 		ajaxError(e);
 	}
 });
@@ -42,32 +40,26 @@ $.ajaxSetup({
  * @param e
  */
 function ajaxError(e){
+    if (e.status == 998) {
+//        alert('切换了业务，页面需要重新刷新！');
+        window.location.reload();
+    }
 	if (e.status == 999) {
-        top.location.href=e.getResponseHeader('loginUrl');
+        var c_url = basePath + 'common/login_error.jsp';
+        window.location.href=c_url;
     }else if (!e.responseText){
-    	printMsg(jQuery.i18n.prop("common_operation_forbidden"), 2);
-        window.location.href='/login.jsp';
+    	printMsg('没有操作权限', 2);
     	$.unload();
     }else{
-    	printMsg(jQuery.i18n.prop("common_network_error"), 2);
+    	printMsg('网络异常', 2);
     	$.unload();
     }
-};	
-
-
-var statueColor = [];
-statueColor[1] = 'label-default'
-statueColor[2] = 'label-primary'
-statueColor[3] = 'label-success'
-statueColor[4] = 'label-danger'
-statueColor[6] = 'label-warning'
-statueColor[7] = 'label-info'
-
+};
 
 $.extend({
 	load : function(){
 		var style = "z-index: 9999;position: fixed;left:0;top:0;text-align:center;width:100%;height:100%;vertial-align:middle;";
-		var html = '<div id="loading-warp" style="'+style+'"><img src="/static/job/img/loading_2_36x36.gif" style="padding-left:97px;position:absolute;top:50%;margin-top:-36px;"></div>';
+		var html = '<div id="loading-warp" style="'+style+'"><img src="./img/loading_2_36x36.gif" style="padding-left:97px;position:absolute;top:50%;margin-top:-36px;"></div>';
 		$('body').eq(0).append(html);
 	},
 	unload : function(){
@@ -136,6 +128,32 @@ function SmoothlyMenu() {
 		}
 	}
 })(jQuery);
+
+//简单信号量实现
+simpleSemaphore = function(){
+	var _sem = 0;
+	return {
+		get : function(){
+			return _sem;
+		},		
+		reset : function(){
+			_sem = 0;
+		},		
+		add : function(){			
+			_sem += 1;
+			console.log('add, sem=' + _sem);
+		},		
+		sub : function(callBack){
+			_sem -= 1;
+			console.log('sub, sem=' + _sem);
+			if(callBack && (_sem <= 0)){
+				callBack();
+			}
+		}
+	};
+};
+
+
 function havePropInObj(_obj){
 	var isObj = false;
 	if(_obj && typeof _obj ==='object'){
@@ -158,7 +176,7 @@ function createNewTab(title, url, title2, _extraObj){
     	if("pushState" in history){
     		var href = url;
 	    	if(!((href.indexOf('#')>0 || href=='javascript:;')) && (href.indexOf('http')<0 && href.indexOf('https')<0 && href.indexOf('ftp')<0)){
-	    		href = "?"+href.substr(6,href.length-10);
+	    		href = basePath+"?"+href.substr(6,href.length-10);
 	    		history.pushState({ href: href }, null, href);
 	    	}
     	}
@@ -169,26 +187,27 @@ function createNewTab(title, url, title2, _extraObj){
 		if(title&&title2){
 			$('#breadcrumb-3').parent().parent().show();
 			$('#breadcrumb-3').text(title);
-			$('#breadcrumb-2').text(title2);
+			$('#breadcrumb-2').html('<i class="fa fa-dashboard"></i> ' + title2);
 		}else{
 			$('#breadcrumb-3').parent().parent().hide();
 		}
+		currentPage = url;
 		$.unload();
-	})
+	});
 }
 var pnotify = null;
 function printMsg(msg, type){
 	if(pnotify && pnotify.state !== 'closed'){
 		pnotify.update({
-			title:  type === 1 ? jQuery.i18n.prop("common.success"):jQuery.i18n.prop("common.failed"),
+			title:  type === 1 ? "成功":"失败",
 			text: msg,
-			type: type === 1 ? jQuery.i18n.prop("common.success"):jQuery.i18n.prop("common.failed")
+			type: type === 1 ?'success':'error'
 		})
 		pnotify.queueRemove();
 		return false;
 	}
 	pnotify =  new PNotify({
-		title:  type === 1 ? jQuery.i18n.prop("common.success"):jQuery.i18n.prop("common.failed"),
+		title:  type === 1 ? "成功":"失败",
 		text: msg,
 		addclass: 'ijobs-msg-center',
 		type: type === 1 ?'success':'error',
@@ -210,6 +229,16 @@ function confirmModal(title,msg,yesFun,noFun,yesBtnText, cancelBtnText){
 	var arg = arguments;
 	$('#confirmModalTitle').html(title);
 	$('#confirmModalContent').html(msg);
+	if(yesBtnText){
+		$('#yBtn').html(yesBtnText);
+	} else {
+        $('#yBtn').html('确定');
+    }
+    if(cancelBtnText){
+        $('#cBtn').html(cancelBtnText);
+    } else {
+        $('#cBtn').html('取消');
+    }
 	$('#confirmModal').modal();
 	$('#yBtn').off('click');
 	$('#yBtn').on('click',function(){
@@ -225,20 +254,7 @@ function confirmModal(title,msg,yesFun,noFun,yesBtnText, cancelBtnText){
 		}
 		$('#confirmModal').modal('hide');
 	});
-	if(yesBtnText){
-		$('#yBtn').html(yesBtnText);
-	} else {
-        $('#yBtn').html(jQuery.i18n.prop("common.confirm"));
-    }
-    if(cancelBtnText){
-        $('#cBtn').html(cancelBtnText);
-    } else {
-        $('#cBtn').html(jQuery.i18n.prop("common.cancel"));
-    }
 }
-
-
-
 
 function confirmModal_yesNoCancel(title,msg,yesFun,noFun,cFun){
 	var arg = arguments;
@@ -291,12 +307,12 @@ function expendMenu(index,index2){
 // 目标服务器校验
 function validSpecialPath(value){
 	if(/(\/\/|\\\\)+/.test(value)){
-         return jQuery.i18n.prop("common_duplicate_slash");
+         return "路径中不能有重复的“/”或者“\\”";
      }             
      if(/^[a-zA-Z]{1}:(\/|\\){1}/.test(value)){//windows
     	 value = value.toLowerCase();            	 
     	 if(value.indexOf('c:\\windows\\system32') !== -1){
-    		 return jQuery.i18n.prop("common_windows_path_tips");
+    		 return "windows服务器可设置的目录：除了C:\\WINDOWS\\system32之外的所有目录";
     	 }
          return true;                 
      }else if(/^\//.test(value)){//linux
@@ -306,17 +322,19 @@ function validSpecialPath(value){
             value = value.substring(0,index);
         }                    
 		if(/[\\]/.test(value)){
-		return jQuery.i18n.prop("common_path_with_invalid_char");
+		return "路径中不能包含特殊字符“\\”";
 		}
 		value = value.toLowerCase();
 		var  allowPath = ['usr', 'data', 'tmp', 'home', 'data1', 'data2', 'data3', 'data4', 'opt'];
 		values = value.split('/');
 		if(allowPath.indexOf(values[1]) === -1){
-			return jQuery.i18n.prop("common_linux_path_tips");
+			return "linux服务器可设置的目录：/usr, /data,/tmp,/home,/data1,/data2,/data3,/data4,/opt";
 		}
 		return true;
+        
+		
      }else { 
-         return jQuery.i18n.prop("common_invalid_path");
+         return '非法路径';
      }
 }
 // 源文件服务器目录校验
@@ -347,20 +365,20 @@ function validSourceFileList(textArea){
 
 function validPaths(value){
 	if(value.indexOf(' ')!==-1){
-		return jQuery.i18n.prop("common_path_with_space");
+		return "路径中不能有空格";
 	}
 	if(/(\/\/|\\\\)+/.test(value)){
-        return jQuery.i18n.prop("common_duplicate_slash");
+        return "路径中不能有重复的“/”或者“\\”";
     } 
     if(/^[a-zA-Z]{1}:(\/|\\){1}/.test(value)){//windows
         return true;                 
     }else if(/^\//.test(value)){//linux
         if(/[\\]/.test(value)){
-            return jQuery.i18n.prop("common_path_with_invalid_char");
+            return "路径中不能包含特殊字符“\\”";
         }
         return true;
     }else {
-        return jQuery.i18n.prop("common_invalid_path");    
+        return '非法路径';    
     }
 }
 
@@ -384,54 +402,7 @@ function allTextHtmlDecode(){
 		if(value){
 			$(this).val(htmlDecode(value));
 		}
-	})
-}
-
-function reloadI18nProperties(language) {
-    jQuery.i18n.properties({
-        name : 'message',
-        path : 'i18n/',
-        mode : 'map',
-        language: language,
-        callback : function() {// 加载成功后设置显示内容
-//            alert(jQuery.i18n.prop("success"));
-        }
-    });
-}
-
-function changeLanguage(language) {
-    $.ajax({
-        type : 'POST',
-        contentType : 'application/x-www-form-urlencoded',
-        url : 'nm/user/userAction/changeLanguage.action',
-        data : {language: language},
-        success : function(rs) {
-            setCookie("job_lang", language, 30);
-            reloadI18nProperties(language);
-            console.log(jQuery.i18n.prop("change_language_success"));
-        }
-    });
-}
-
-function setCookie(c_name, value, expiredays) {
-	var exdate = new Date()
-	exdate.setDate(exdate.getDate() + expiredays)
-	document.cookie = c_name + "=" + escape(value)
-			+ ((expiredays == null) ? "" : ";expires=" + exdate.toGMTString())
-}
-
-function getCookie(c_name) {
-	if (document.cookie.length > 0) {
-		c_start = document.cookie.indexOf(c_name + "=")
-		if (c_start != -1) {
-			c_start = c_start + c_name.length + 1
-			c_end = document.cookie.indexOf(";", c_start)
-			if (c_end == -1)
-				c_end = document.cookie.length
-			return unescape(document.cookie.substring(c_start, c_end))
-		}
-	}
-	return ""
+	});
 }
 
 // 使屏幕滚动到当前元素节点
@@ -447,11 +418,11 @@ function getCookie(c_name) {
 
 (function($) {
 	var urls = {
-	   'user':'nm/components/accountAction/searchAccountList.action',		// 登记执行账户
-	   'remoteFileUser':'jobs/getUserAccountsByApp.action',	// 远程文件账户 	  
-	   'ipListAndServerName':'nm/personal/appAction/getIpList.action',
-	   'ipList':'nm/personal/appAction/getIpList.action',
-	   'serverList':'/bk/components/searchServerSetList.action'//服务器集合
+	   'user':basePath+'nm/components/accountAction!searchAccountList.action',		// 登记执行账户
+	   'remoteFileUser':basePath+'jobs/getUserAccountsByApp.action',	// 远程文件账户 	  
+	   'ipListAndServerName':basePath+'nm/personal/appAction!getIpList.action',
+	   'ipList':basePath+'nm/personal/appAction!getIpList.action',
+	   'serverList':basePath+'/bk/components/searchServerSetList.action'//服务器集合
     };
 	
 	// 创建chosen 
@@ -461,44 +432,53 @@ function getCookie(c_name) {
        var defaultValue = options.defaultValue; // 默认选中
        var width = options.width;
        if(width){
-    	   $(this).chosen({no_results_text:jQuery.i18n.prop("common_no_result"),width:width});     
+    	   $(this).chosen({no_results_text:'没有您搜索的',width:width});     
        }else{
-    	   $(this).chosen({no_results_text:jQuery.i18n.prop("common_no_result")});   
+    	   $(this).chosen({no_results_text:'没有您搜索的'});   
        }
        var temp='<option></option>';
      
        $.ajax({
           url:urls[type],
           success:function(data){
-              $.each(data.data,function(index,value){
-            	  if('user' === type ){
-            		  if(defaultValue === value.account){
-            			  temp+='<option value="'+value.account+'" selected>'+value.account+'</option>';
-            		  }else{
-            			  temp+='<option value="'+value.account+'">'+value.account+'</option>';
-            		  } 
-            	  }else if ('fileServer' === type){            		  
-            		  temp+='<option value="'+value.fileServerId+'">'+value.name+'</option>';
-            	  }else if ('ipList' === type){
-            		  if(defaultValue != undefined){ 
-            			  defaultValue.forEach(function(defValue){
-                			  if(defValue === value.ip){
-                				  temp+='<option value="'+value.ip+'" selected>'+'['+value.ip+']'+'</option>';                    				  
-                			  }
-                		  });
-            			  temp+='<option value="'+value.ip+'">'+'['+value.ip+']</option>';
-            		  }else{
-            			  temp+='<option value="'+value.ip+'">'+'['+value.ip+'] '+value.ipDesc+'</option>';
-            		  }
-            		  
-            	  }else if ('serverList' === type){
-            		  temp+='<option value="'+value.id+'">'+value.serverSetName+'</option>'; 
-            	  }            	  
-              });        		  
-              $(me).append(temp);
-              $(me).trigger("chosen:updated");
-          }
-       });
+        	  if ('remoteFileUser' === type){
+        		  var data = eval("("+data+")")
+        		  $.each(data,function(index,value){        			  
+        			  temp+='<option value="'+value.id+'">'+value.accountName+'</option>'; 
+        		  });
+        	  }else{
+        		  var data = eval("("+data+")")
+                  $.each(data.data,function(index,value){
+                	  if('user' === type ){
+                		  if(defaultValue === value.account){
+                			  temp+='<option value="'+value.account+'" selected>'+value.account+'</option>';  
+                		  }else{
+                			  temp+='<option value="'+value.account+'">'+value.account+'</option>';
+                		  } 
+                	  }else if ('fileServer' === type){            		  
+                		  temp+='<option value="'+value.fileServerId+'">'+value.name+'</option>';
+                	  }else if ('ipList' === type){
+                		  if(defaultValue != undefined){ 
+                			  defaultValue.forEach(function(defValue){
+                    			  if(defValue === value.ip){
+                    				  temp+='<option value="'+value.ip+'" selected>'+'['+value.ip+']'+'</option>';                    				  
+                    			  }
+                    		  });
+                			  temp+='<option value="'+value.ip+'">'+'['+value.ip+']</option>';
+                		  }else{
+                			  temp+='<option value="'+value.ip+'">'+'['+value.ip+'] '+value.ipDesc+'</option>';
+                		  }
+                		  
+                	  }else if ('serverList' === type){
+                		  temp+='<option value="'+value.id+'">'+value.serverSetName+'</option>'; 
+                	  }            	  
+                  });        		  
+        	  }
+          $(me).append(temp);
+          $(me).trigger("chosen:updated");
+          
+        }
+    });
    }    
 })(jQuery);
 

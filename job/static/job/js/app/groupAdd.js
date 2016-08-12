@@ -2,12 +2,12 @@
  * 新增服务器集
  */
 $(function(){
+    $('.priview-span').tooltip();
 	function getServerSetDetail(serverSetId){
         $.load();
 		$.ajax({
 			type : 'POST',
-            contentType:'application/x-www-form-urlencoded',
-			url: basePath+"nm/components/nmServerSetAction/getServerSetDetail.action",
+			url: basePath+"nm/components/nmServerSetAction!getServerSetDetail.action",
 			dataType : 'json',
 			data : {
 				serverSetId : serverSetId
@@ -17,8 +17,10 @@ $(function(){
 					var data = rs.data;
 					var setServiceStatus = data.setServiceStatus && data.setServiceStatus.split(',');
 					var setEnviType = data.setEnviType && data.setEnviType.split(',');
+					var setCategory = data.setCategory && data.setCategory.split(',');
 					var setServiceStatusName = data.setServiceStatusName && data.setServiceStatusName.split(',');
 					var setEnviTypeName = data.setEnviTypeName && data.setEnviTypeName.split(',');
+					var setCategoryName = data.setCategoryName && data.setCategoryName.split(',');
 					var setIDs = data.setIDs && data.setIDs.split(',');
 					var setNames = data.setNames && data.setNames.split(',');
 					var moduleNames = data.moduleNames && data.moduleNames.split(',');
@@ -40,7 +42,7 @@ $(function(){
 							'value' : property,
 							'text' : value
 						}));
-					})
+					});
 					$.each(setEnviType,function(i, property){
 						var value = setEnviTypeName[i];
 						$('#setPropertyWarp').append($('<button>',{
@@ -51,7 +53,18 @@ $(function(){
 							'value' : property,
 							'text' : value
 						}));
-					})
+					});
+					$.each(setCategory,function(i, property){
+						var value = setCategoryName[i];
+						$('#setPropertyWarp').append($('<button>',{
+							'class' : 'mr5 mb5 king-btn king-btn-mini king-info',
+							'type' : 'button',
+							'data-value' : property+'|'+value,
+							'data-type' : 3,
+							'value' : property,
+							'text' : value
+						}));
+					});
 					if(setIDs.length>0){
 						$('#getSetsSelectWarp').find('.btn-toolbar').addClass('none');
                         if(!$('#getSetsSelectWarp').hasClass('block-disabled')){
@@ -93,13 +106,14 @@ $(function(){
 		$.load();
 		$.ajax({
 			type : 'POST',
-			url: basePath+"nm/components/nmServerSetAction/getSetProperty.action",
+			url: basePath+"nm/components/nmServerSetAction!getSetProperty.action",
 			dataType : 'json',
 			success : function(rs) {
 				if(rs.success){
 					var data = rs.data;
 					var setServiceStatus = data.setServiceStatus;
 					var setEnviType = data.setEnviType;
+					var setCategory = data.setCategory;
 					var valueBtns =  $('#setPropertyWarp').find('button');
 					var dataValues = [];
 					$.each(valueBtns,function(index,opt){
@@ -136,20 +150,38 @@ $(function(){
 							'text' : opt.value
 						}));
 					});
+					
+					if(setCategory && setCategory.length > 0){
+						$('#setCategoryGroup').parent().removeClass('none');
+						$('#setCategoryGroup').find('button').remove();
+						$.each(setCategory,function(index,opt){
+							var haveData = false;
+							if(dataValues.length>0 && dataValues.indexOf(opt.property+'|'+opt.value)!==-1){
+								haveData = true;
+							}
+							$('#setCategoryGroup').append($('<button>',{
+								'class' : 'mr5 mb5 king-btn king-btn-mini '+(haveData?'king-info':'king-default'),
+								'data-value' : opt.property+'|'+opt.value,
+								'data-type' : 3,
+								'value' : opt.property,
+								'text' : opt.value
+							}));
+						});
+					}
+					
+					
 					$('#setPropertyModal').modal('show').draggable({
 						cursor: "pointer",
 						handle: "div.modal-header"
 					});
-				} else {
-                    printMsg(rs.msg.message, 2);
-                }
+				}
 				$.unload();
 			}
 		});
 		
 	});
 	
-	$('#setServiceStatusGroup,#setEnviTypeGroup').on('click','button',function(e){
+	$('#setServiceStatusGroup,#setEnviTypeGroup,#setCategoryGroup').on('click','button',function(e){
 		var target = $(this);
 		if(target.hasClass('king-default')){
 			target.removeClass('king-default').addClass('king-info');
@@ -159,22 +191,22 @@ $(function(){
 	});
 	
 	$('#setPropertyCheckAll').click(function(){
-		$('#setServiceStatusGroup,#setEnviTypeGroup').find('button').removeClass('king-default').addClass('king-info');
+		$('#setServiceStatusGroup,#setEnviTypeGroup,#setCategoryGroup').find('button').removeClass('king-default').addClass('king-info');
 	});
 	
 	$('#setPropertyInverse').click(function(){
-		$.each($('#setServiceStatusGroup,#setEnviTypeGroup').find('button'),function(i,opt){
+		$.each($('#setServiceStatusGroup,#setEnviTypeGroup,#setCategoryGroup').find('button'),function(i,opt){
 			var target = $(opt);
 			if(target.hasClass('king-default')){
 				target.removeClass('king-default').addClass('king-info');
 			}else{
 				target.removeClass('king-info').addClass('king-default');
 			}
-		})
+		});
 	});
 	
 	$('#setPropertySaveBtn').click(function(){
-		var buttons = $('#setServiceStatusGroup,#setEnviTypeGroup').find('button.king-info').clone(false);
+		var buttons = $('#setServiceStatusGroup,#setEnviTypeGroup,#setCategoryGroup').find('button.king-info').clone(false);
 		$('#setPropertyWarp').find('button').remove();
 		if(buttons.length>0){
 			$('#setPropertyWarp').find('.btn-toolbar').addClass('none');
@@ -198,7 +230,7 @@ $(function(){
 		$.load();
 		$.ajax({
 		type : 'POST',
-		url: basePath+"nm/components/nmServerSetAction/getSetsByProperty.action",
+		url: basePath+"nm/components/nmServerSetAction!getSetsByProperty.action",
 		dataType : 'json',
 		success : function(rs) {
 			if(rs.success){
@@ -228,9 +260,7 @@ $(function(){
 					cursor: "pointer",
 					handle: "div.modal-header"
 				});
-			} else {
-                printMsg(rs.msg.message, 2);
-            }
+			}
 			$.unload();
 		}
 	});
@@ -279,13 +309,17 @@ $(function(){
 			searchVal = searchVal.toLowerCase();
 			$.each($('#getSetsGroup').find('button'),function(i,opt){
 				text = $(opt).text().toLowerCase();
-				if($(opt).hasClass('btn-default') && text.indexOf(searchVal)===-1){
+				if($(opt).hasClass('king-default') && text.indexOf(searchVal)===-1){
 					$(opt).addClass('none');
 				}else{
 					$(opt).removeClass('none');
 				}
 			});
-		}
+		} else {
+            $.each($('#getSetsGroup').find('button'),function(i,opt){
+                $(opt).removeClass('none');
+            });
+        }
 	});
 	//	业务SET操作事件 end	
 	
@@ -295,11 +329,14 @@ $(function(){
 		$.load();
 		var setServiceStatusArr = [],setServiceStatus;
 		var setEnviTypeArr = [],setEnviType;
+		var setCategoryArr = [],setCategory;
 		$.each($('#setPropertyWarp>.king-info'),function(i,opt){
 			if($(opt).attr('data-type') == 1){
-				setServiceStatusArr.push($(opt).val())
+				setServiceStatusArr.push($(opt).val());
 			}else if($(opt).attr('data-type') == 2){
-				setEnviTypeArr.push($(opt).val())
+				setEnviTypeArr.push($(opt).val());
+			}else if($(opt).attr('data-type') == 3){
+				setCategoryArr.push($(opt).val());
 			}
 		})
 		if(setServiceStatusArr.length>0){
@@ -307,6 +344,9 @@ $(function(){
 		}
 		if(setEnviTypeArr.length>0){
 			setEnviType = setEnviTypeArr.join(',');
+		}
+		if(setCategoryArr.length>0){
+			setCategory = setCategoryArr.join(',');
 		}
 		var ccModuleIdArr = [],ccModuleIds;
 		$.each($('#getSetsSelectWarp>.king-info'),function(i,opt){
@@ -317,13 +357,14 @@ $(function(){
 		}
 		$.ajax({
 		type : 'POST',
-		url: basePath+"nm/components/nmServerSetAction/getModulesByPropertyOrSets.action",
+		url: basePath+"nm/components/nmServerSetAction!getModulesByPropertyOrSets.action",
 		dataType : 'json',
-		data :JSON.stringify({
-			setIDs : ccModuleIds,
+		data :{
+			setIds : ccModuleIds,
 			setEnviType : setEnviType,
-			setServiceStatus : setServiceStatus
-		}),
+			setServiceStatus : setServiceStatus,
+			setCategory : setCategory
+		},
 		success : function(rs) {
 			if(rs.success){
 				var dataArr = rs.data;
@@ -350,9 +391,7 @@ $(function(){
 					cursor: "pointer",
 					handle: "div.modal-header"
 				});
-			} else {
-                 printMsg(rs.msg.message, 2);
-            }
+			}
 			$.unload();
 		}
 	});
@@ -398,13 +437,17 @@ $(function(){
 			searchVal = searchVal.toLowerCase();
 			$.each($('#getModelsGroup').find('button'),function(i,opt){
 				text = $(opt).text().toLowerCase();
-				if($(opt).hasClass('btn-default') && text.indexOf(searchVal)===-1){
+				if($(opt).hasClass('king-default') && text.indexOf(searchVal)===-1){
 					$(opt).addClass('none');
 				}else{
 					$(opt).removeClass('none');
 				}
 			});
-		}
+		} else {
+            $.each($('#getModelsGroup').find('button'),function(i,opt){
+                $(opt).removeClass('none');
+            });
+        }
 	});
 	//	业务模块操作事件 end	
 	
@@ -456,17 +499,17 @@ $(function(){
 		
 		$.ajax({
 			type : 'POST',
-			url: basePath+"nm/components/nmServerSetAction/saveServerSet.action",
+			url: basePath+"nm/components/nmServerSetAction!saveServerSet.action",
 			dataType : 'json',
-			data : JSON.stringify({
-				serverSetId : serverSetId ? serverSetId : 0,
+			data : {
+				serverSetId : serverSetId,
 				name : name,
 				setEnviType : setEnviType,
 				setServiceStatus : setServiceStatus,
-				setIDs : ccModuleIds,
+				setIds : ccModuleIds,
 				moduleNames : moduleNames,
 				remark : remark
-			}),
+			},
 			success : function(rs) {
 				if(rs.success){
 					delete extraObj.data;
@@ -512,14 +555,14 @@ $(function(){
 		}
 		$.ajax({
 			type : 'POST',
-			url: basePath+"nm/components/nmServerSetAction/previewCCHostByServerSet.action",
+			url: basePath+"nm/components/nmServerSetAction!previewCCHostByServerSet.action",
 			dataType : 'json',
-			data:JSON.stringify({
+			data:{
 				setEnviType : setEnviType,
 				setServiceStatus : setServiceStatus,
-				setIDs : ccModuleIds,
+				setIds : ccModuleIds,
 				moduleNames : moduleNames
-			}), 
+			}, 
 			success : function(rs) {
 				if(rs.success){		
 					$('.testIpTable>tbody').remove();
@@ -532,7 +575,7 @@ $(function(){
 							search : '',
 							lengthMenu : "每页显示 _MENU_ 记录",
 							zeroRecords : "没有找到搜索结果",
-							info : "每页 9 条,共 _TOTAL_ 条,分页 _PAGE_ / _PAGES_",
+							info : "第 _PAGE_ 页 / 共 _PAGES_ 页&nbsp;&nbsp;每页显示 9 条&nbsp;&nbsp;共 _TOTAL_ 条",
 							infoEmpty : "",
 							infoFiltered : "(从 _MAX_ 条数据中搜索)",
 							paginate : {
@@ -551,7 +594,7 @@ $(function(){
 						},{
 							data : null,
 							render : function(data, type, row, meta) {
-								if (row.alived === false) {
+								if (row.alived === 0) {
 									return '<span style="color: red;">Agent未安装</span>';
 								}else if(row.alived === -1){
 									return '<span style="color: red;">非法IP</span>';

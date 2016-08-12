@@ -1,6 +1,5 @@
 
 (function(){
- 
 	$('#creater').autocomplete({
 		source: maintainers
 	});
@@ -61,7 +60,7 @@
 		        search: '全局搜索：',
 		        lengthMenu: "每页显示 _MENU_ 记录",
 		        zeroRecords: "没找到相应的数据！",
-		        info: "分页 _PAGE_ / _PAGES_",
+		        info: "第 _PAGE_ 页 / 共 _PAGES_ 页&nbsp;&nbsp;每页显示 10 条&nbsp;&nbsp;共 _TOTAL_ 条",
 		        infoEmpty: "",
 		        infoFiltered: "(从 _MAX_ 条数据中搜索)",
 		        paginate: {
@@ -70,7 +69,7 @@
 		            previous: '<<',
 		            next: '>>'
 		        }
-		    }	  
+		    };
 		 $('#resultTable').DataTable({
 			 bLengthChange: false,
 			 destroy: true,
@@ -82,18 +81,8 @@
 			 pagingType:'input',
 			 ajax:{
 				 "type": "POST",
-				 "url": basePath+'nm/jobs/taskAction/getTaskList.action',
-                 "dataType" : 'json',
-				 "data": function (d) {
-                     if(data){
-                         data.draw = d.draw;
-                         data.start = d.start;
-                         data.length = d.length;
-                         return JSON.stringify(data);
-                     } else {
-                         return '{}';
-                     }
-                 },
+				 "url": basePath+'nm/jobs/jobsAction!getTaskList.action',
+				 "data": data,
 				 "error":function(e){
 						ajaxError(e);
 				 }
@@ -179,8 +168,7 @@
 			   confirmModal('提示','确定要删除"'+data.name+'" ?',function(){
 				   $.ajax({
 					   type : 'POST',
-                       contentType:'application/x-www-form-urlencoded',
-					   url : basePath + 'nm/jobs/taskAction/deleteTask.action',
+					   url : basePath + 'nm/jobs/jobsAction!deleteTask.action',
 					   dataType : 'json',
 					    data : {
 							taskId : data.id
@@ -188,7 +176,6 @@
 						success : function(result) {
 							if(result.success){
 								row.remove().draw();
-                                printMsg('删除成功！', 1);
 							}else{
 								printMsg('删除失败！', 2);
 							}
@@ -261,25 +248,25 @@
 			printMsg('定时规则不能为空！', 2);
 			return false;
 		}
-		var data = {
-				name:name,
+		$.ajax({
+			type : 'POST',
+			url : basePath + 'nm/jobs/crontabAction!saveCrontabTask.action',
+			dataType : 'json',
+		    data : {
+		    	crontabTaskId:null,
+	    		name:name,
 	    		des:des,
 	    		taskId:taskId,
 	    		type : type,
-	    		cronExpression:cronExpression	
-		};
-		$.ajax({
-			contentType:'application/json',
-			url : basePath + 'nm/jobs/crontabAction/saveCrontabTask.action',
-			dataType : 'json',
-		    data : JSON.stringify(data),
+	    		cronExpression:cronExpression
+			},
 			success : function(result) {
 				printMsg(result.msg.message, result.msg.msgType);
 				if(result.success){
 					$('#crontab-time-modal').modal('hide');
 				}
 			}
-		});
+		})
 	});
     //初始化页面时直接调用
 	(function(){

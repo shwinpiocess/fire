@@ -25,8 +25,7 @@
 		if(userName.length>0 && userName.indexOf(' ') == -1){
 			$.ajax({
 				type : 'POST',
-                contentType : 'application/x-www-form-urlencoded',
-				url : basePath+'nm/components/accountAction/saveAccount.action',
+				url : basePath+'nm/components/accountAction!saveAccount.action',
 				dataType : 'json',
 				data:{
 					account:userName, 
@@ -159,7 +158,7 @@
 			 confirmModal('提示','从多台服务器拉取同名文件，是否在目标路径下追加源IP子路径？',function(){
 				 targetFilePath +='/[FILESRCIP]/';
 				 taskExecuteAction();
-			 });
+			 })
 		}else{
 			var repeatName = fileTransfer.validFileNameRepeat(FileSourValue);
 			var confirmModalMsg;
@@ -173,7 +172,7 @@
 				},function(){
 					targetFilePath +='/[FILESRCIP]/';
 					taskExecuteAction();
-				});
+				})
 			}else{
 				taskExecuteAction();
 			}
@@ -183,12 +182,12 @@
 		function taskExecuteAction(){
 			if(isProgress){
 	        	printMsg('请等待文件上传完成！',2);
-	        	//return false;
+	        	return false;
 	        }
 			$.load();
 			$.ajax({
-				contentType:'application/x-www-form-urlencoded',
-				url : basePath+'nm/jobs/taskExecuteAction/fastPushFile.action',
+				type : 'POST',
+				url : basePath+'nm/jobs/taskExecuteAction!fastPushFile.action',
 				dataType : 'json',
 				data:{
 					name:$.trim(name.val()),
@@ -228,7 +227,7 @@
     	fileTransfer.add();    	
     });
     $("#fileUpload").fileupload({
-    	url : basePath + "nm/components/uploadAction/uploadFile.action",
+    	url : basePath + "nm/components/uploadAction!uploadFile.action",
     	dataType: 'json',
     	change:function(e, data){
     		var nameFail,sizeFail,repeat=[] , allFileName = fileTransfer.getAllFileName();
@@ -265,10 +264,9 @@
     		}
     	},	 
     	progress:function(e,data) {
-			var total = data.total;
+    		var total = data.total;
     		var loaded = data.loaded;
     		var percent = (loaded*100 / total).toFixed();
-            //这里不应该传完，而是要等到done的时候，才能100%
             if (percent >= 99) {
                 percent = 99;
             }
@@ -291,7 +289,7 @@
     		var status = data.jqXHR.status,fileName= data.files[0].name;
     		if(status==413){
     			printMsg('文件不能大于500M！',2);
-    			fileTransfer.fail(fileName);
+    			fileTransfer.fail(fileName)
     		}
     	},
     	error : function(e, data){

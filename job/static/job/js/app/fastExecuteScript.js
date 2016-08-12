@@ -2,6 +2,8 @@ $(function($){
 	//脚本名称
 	$('input[name="name"]').val("执行脚本-"+createDateStr());
 	$('#iplist').createServerIp({width:'700px'});
+	$('[data-toggle="tooltip"]').tooltip();
+	
 	var codeMir;
 	
 	$('#userAccount').createChosen({type:'user'});	
@@ -18,11 +20,10 @@ $(function($){
 		if(userName.length>0 && userName.indexOf(' ') == -1){
 			$.ajax({
 				type : 'POST',
-                contentType : 'application/x-www-form-urlencoded',
-				url : basePath+'nm/components/accountAction/saveAccount.action',
+				url : basePath+'nm/components/accountAction!saveAccount.action',
 				dataType : 'json',
 				data:{
-					account:userName
+					account:userName, 
 				},
 				success : function(result){
 					if(result.success){ 
@@ -44,6 +45,9 @@ $(function($){
 	
 	window.setTimeout(function(){
 		codeMir = $('#codediv').codeMirror();
+		if(extraObj.scriptId){
+			getcodeMirContent(extraObj.scriptId)
+		}
 	}, 20);
 	
 	//本地脚本上传
@@ -70,7 +74,7 @@ $(function($){
 			}
 		},
 		defalutProgress : true,
-		saveUrl:basePath+'nm/components/uploadAction/uploadScript.action'
+		saveUrl:basePath+'nm/components/uploadAction!uploadScript.action'
 	});
     
 	
@@ -92,43 +96,68 @@ $(function($){
 	getJobScriptListByAppSelect();
 	function getJobScriptListByAppSelect(){
 		$.ajax({
-			  contentType:'application/json',              
-			  url: basePath+"nm/components/scriptAction/getScriptList.action",			  
-			  dataType:'json',			  
+			  type : 'post',
+			  url: basePath+"nm/components/scriptAction!getScriptList.action",			  
+			  dataType:'json',
+			  data:{
+				  applicationId : APPID
+			  },
 			  success: function(reponseText){
 				  var inner = '';
 				  var data = reponseText.data; 
 				  inner+="<option></option>"
 				  for(var i=0;i< data.length;i++){
-					  inner += '<option value="'+data[i].id+'">'+data[i].name+'</option>';					 
+					  inner += '<option value="'+data[i].scriptId+'">'+data[i].name+'</option>';					 
 				  }
 				  $('#cmbScript').append(inner);
 				  $('#cmbScript').chosen({width:'427px'}).change(function(){
 					  var scriptId = $('#cmbScript').val();						
-					  $.ajax({
-						  type : 'post',
-                          contentType:'application/x-www-form-urlencoded',
-						  url: basePath+"nm/components/scriptAction/getScriptContent.action",			  
-						  dataType:'json',
-						  data:{
-							  scriptId : scriptId
-						  }, 
-						  success: function(result){
-							  	if(result.success){
-							  		codeMir.setValue(result.data.content);
-									codeMir.setType(result.data.type);
-									printMsg('脚本加载成功！',1);
-							  	}else{
-							  		printMsg(result.msg.message,result.msg.msgType);
-							  	}
-							  	
-						  }
-					  });
+					  getcodeMirContent(scriptId)
 				  });
 			  }
 		});
 	}
- 
+	function getcodeMirContent(scriptId){
+		$.load()
+		$.ajax({
+			  type : 'post',
+			  url: basePath+"nm/components/scriptAction!getScriptContent.action",			  
+			  dataType:'json',
+			  data:{
+				  scriptId : scriptId
+			  }, 
+			  success: function(result){
+				  	if(result.success){
+//				  		codeMir = $('#codediv').codeMirror();
+				  		codeMir.setValue(result.data.content);
+						codeMir.setType(result.data.type);
+						printMsg('脚本加载成功！',1);
+				  	}else{
+				  		printMsg(result.msg.message,result.msg.msgType);
+				  	}
+				  	$.unload()
+			  }
+		  });
+	}
+	$('input[name=scriptTimeout]').keydown(function(e){
+		var k = e.keyCode;
+		if ((k <= 57 && k >= 48) || (k <= 105 && k >= 96) || (k == 8)){  
+	      return true;  
+	    }else {  
+	     return false;  
+	    }  
+	}).change(function(){
+		var value = parseInt($(this).val());
+		if(value<60){
+			$(this).val(60);
+		}else if(value>=60 && value<= 3600){
+			$(this).val(value);
+		}else if(value>3600){
+			$(this).val(3600);
+		}else{
+			$(this).val(1000);
+		}
+	});
 	$("#scriptBtn").on('click',function(){
 		var name = $.trim($('input[name=name]').val());	
 		var userAccountId = $('#userAccount').val();
@@ -138,6 +167,8 @@ $(function($){
 		var ccScriptParam = $.trim($('#iplist .cc-param-hidden').text());
 		var type = codeMir.getType();
 		var content = codeMir.getValue();
+		var scriptParam = $('input[name=scriptParam]').val();
+		var scriptTimeout = $('input[name=scriptTimeout]').val();
 		
 		if(!name){
 			$('input[name=name]').popover({"viewport":false})
@@ -174,8 +205,8 @@ $(function($){
         }
         $.load();
 		$.ajax({
-			  contentType:'application/x-www-form-urlencoded',
-			  url: basePath+"nm/jobs/taskExecuteAction/fastExecuteScript.action",
+			  type : 'post',
+			  url: basePath+"nm/jobs/taskExecuteAction!fastExecuteScript.action",
 			  dataType:'json',
 			  data:{
 				  content : content,
@@ -185,7 +216,9 @@ $(function($){
 				  ccScriptId : ccScriptId,
 				  ccScriptParam : ccScriptParam,
 				  name : name,
-				  type : type
+				  type : type,
+				  scriptParam : scriptParam,
+				  scriptTimeout : scriptTimeout
 			  },
 			  success: function(reponseText){
 				  if(!reponseText.success){

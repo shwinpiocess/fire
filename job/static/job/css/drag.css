@@ -1,0 +1,98 @@
+ .ijobs-block-list{
+    overflow: hidden;
+  }
+  .ijobs-block{
+    float: left;
+    width: 237px;
+    height: 142px;
+    background: #fff;
+    margin: 15px;
+    text-align: center;
+    line-height: 142px;
+    color: #555;
+  }
+  .ijobs-block-j{
+    background:#fff url(../img/fd.png) no-repeat center center;
+  }
+  .ijobs-block-w{
+    background:#fff url(../img/wenjian.png) no-repeat center center;
+  }
+  .ijobs-block.block-hover{
+        background-color: #5F5656;
+        border: 2px dashed #FE9D2B
+    }
+  /* .ijobs-block.block-active{
+	background-color: #5F5656;
+    border: 2px solid #FE9D2B
+  } */
+  .block-container{
+    display: block;
+    position: fixed;
+    left: 230px;
+    bottom: 0;
+    right: 0;
+    top: 0;
+    background: rgba(0,0,0,.7);
+    z-index: 100;
+  }
+  .ijobs-block-list{
+  	width: 1100px;
+  	margin: 200px auto 0 auto;
+  }
+  .drag-item{
+  	z-index: 100000;
+  }
+  .drag-item .fa{
+    background: #fff;
+    width:50px;
+   	height: 50px;
+   	border: 1px solid #ddd;
+   	background: #fafafa url(../img/drag_item.png) no-repeat center center;
+	position: absolute; 
+	top: -25px;
+	right: -25px;
+  }
+   .drag-item .fa:before{
+   	display: none;
+   	content: '';
+   	
+   }
+   
+  .group-node-item{
+    position: relative;
+  }
+  .group-node-item .table{
+    /*margin-bottom: -1px;*/
+  }
+  .item-cut{
+    display: inline-block;
+    width: 24px;
+    height: 24px;
+    text-align: center;
+    line-height: 24px;
+    position: absolute;
+    right: -10px;
+    bottom: -11px;
+    font-size: 22px;
+    opacity: 0;
+    display: none;
+    z-index: 10;
+  }
+  .item-cut .fa{
+    transform: rotate(-180deg);
+    color: red;
+  }
+  .group-node-item .table{
+    /*transition: border-color ease 300ms;*/
+  }
+   .group-node-item.cut-status .table{
+      border-bottom: 1px dashed red !important;
+
+   }
+   .group-node-item:last-child.cut-status .table{
+      border-bottom: 1px solid #ddd !important;
+
+   }
+    .group-node-item.cut-status .item-cut{
+      display: block;
+    }

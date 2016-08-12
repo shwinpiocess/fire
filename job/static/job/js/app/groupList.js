@@ -70,7 +70,7 @@ $(function(){
 		        search: '全局搜索：',
 		        lengthMenu: "每页显示 _MENU_ 记录",
 		        zeroRecords: "没找到相应的数据！",
-		        info: "分页 _PAGE_ / _PAGES_",
+		        info: "第 _PAGE_ 页 / 共 _PAGES_ 页&nbsp;&nbsp;每页显示 10 条&nbsp;&nbsp;共 _TOTAL_ 条",
 		        infoEmpty: "",
 		        infoFiltered: "(从 _MAX_ 条数据中搜索)",
 		        paginate: {
@@ -92,17 +92,8 @@ $(function(){
 			 pagingType:'input',
 			 ajax:{
 				 "type": "POST",
-				 "data": function(d){
-                            if(data){
-                                 data.draw = d.draw;
-                                 data.start = d.start;
-                                 data.length = d.length;
-                                 return JSON.stringify(data);
-                             } else {
-                                 return '{}';
-                             }
-                         },
-				 "url": basePath+'nm/components/nmServerSetAction/searchServerSet.action',				 
+				 "data": data,
+				 "url": basePath+'/nm/components/nmServerSetAction!searchServerSet.action',				 
 				 "error":function(e){
 						ajaxError(e);					 
 				 }
@@ -131,8 +122,7 @@ $(function(){
 			 confirmModal('提示','确定要删除"'+data.name+'" ?',function(){
 				   $.ajax({
 					   type : 'POST',
-                       contentType:'application/x-www-form-urlencoded',
-					   url : basePath + '/nm/components/nmServerSetAction/deleteServerSet.action',
+					   url : basePath + '/nm/components/nmServerSetAction!deleteServerSet.action',
 					   dataType : 'json',
 					    data : {
 					    	serverSetId : data.id

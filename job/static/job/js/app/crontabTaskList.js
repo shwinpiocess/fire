@@ -2,7 +2,6 @@
  * 
  */
 $(function($){
- 
 	$('#createTimeStart').datepicker({
     	dateFormat : 'yy-mm-dd',
     	changeMonth: true,
@@ -46,31 +45,6 @@ $(function($){
     	}
     });
 	
-	var createEditTab =  function(title, url, title2, id){
-		var wrapper = $('.king-content');
-		//获取tab页内容
-		$.load();
-		$.ajax({
-			type : 'GET',
-			url : url,
-			dataType : 'html',
-			success : function(result){
-				$.unload();
-				if(id){
-					if($('#glb-task-id').length>0){
-                        $('#glb-task-id').val(id);
-                    }else{
-                        $('body').append($('<input type="hidden" id="glb-task-id" value="'+id+'"/>'));
-                    }
-				}
-				wrapper.html(result);
-			}
-		});
-		//更新面包屑导航
-		$('#breadcrumb-2').text(title2);
-		$('#breadcrumb-3').text(title);
-	};
-	
 	$('#creater').autocomplete({
 		source: maintainers
 	});
@@ -85,13 +59,13 @@ $(function($){
 		$('#lastModifyUser').val(uin);
 	});
 
-	function searchResult(data){
+	function serachResult(data){
 		$('#resultTable>tbody').remove();
 		  var language = {
 		        search: '全局搜索：',
 		        lengthMenu: "每页显示 _MENU_ 记录",
 		        zeroRecords: "没找到相应的数据！",
-		        info: "分页 _PAGE_ / _PAGES_",
+		        info: "第 _PAGE_ 页 / 共 _PAGES_ 页&nbsp;&nbsp;每页显示 10 条&nbsp;&nbsp;共 _TOTAL_ 条",
 		        infoEmpty: "",
 		        infoFiltered: "(从 _MAX_ 条数据中搜索)",
 		        paginate: {
@@ -100,7 +74,7 @@ $(function($){
 		            previous: '<<',
 		            next: '>>'
 		        }
-		    };
+		    }	  
 		 $('#resultTable').DataTable({
 			 bLengthChange: false,
 			 destroy: true,
@@ -111,25 +85,16 @@ $(function($){
 			 iDisplayLength:10,	
 			 pagingType:'input',
 			 ajax:{
-				 type:'POST',
-				 contentType:'application/json',
-				 url: basePath+'nm/jobs/crontabAction/getCrontabTaskList.action',
-				 data: function(d){
-					 if(data){
-						 data.draw = d.draw;
-						 data.start = d.start;
-						 data.length = d.length;
-						 return JSON.stringify(data);
-					 } else {
-						 return '{}';
-					 }
-				 },
-				 error:function(e){
+				 "type": "POST",
+				 "url": basePath+'nm/jobs/crontabAction!getCrontabTaskList.action',
+				 "data": data,
+				 "error":function(e){
 				     ajaxError(e);
 				 }
 			 },		 
 			 columns:[
 			           {data: 'name'},
+//			           {data: 'des'},
 			           {data: 'TaskName'},
 			           {data: 'cronExpression'},
 			           {data: 'creater'},
@@ -144,7 +109,7 @@ $(function($){
 			                	if(row.status<1||row.status>3){
                                     return '';
 			                	}
-						        return displayTaskStatus[row.status-1];
+						        return displayTaskStatus[row.status-1]
 			                }
 			            },
 			           { 
@@ -158,7 +123,7 @@ $(function($){
 			            		}else if(row.status==2){
 			            			btnGroup += '<a class="king-btn king-primary king-btn-mini task-change" title="启动">启动</a>';
 			            		}
-			                	btnGroup += '</div>';
+			                	btnGroup += '</div>'
 			                	return btnGroup;
 			                }
 			            }
@@ -170,7 +135,7 @@ $(function($){
 			var row = t.row( $(this).parents('tr') ),//获取按钮所在的行
 			data = row.data(),
 			taskId = data.taskId;
-			$('#crontabTaskId').val(data.id);
+			$('#crontabTaskId').val(data.crontabTaskId);
 			$('#crontabName').val(data.name);
 			$('#crontabDes').val(data.des);
 			$('#taskId').parent().parent().hide();
@@ -190,11 +155,11 @@ $(function($){
 			data = row.data();
 			 confirmModal('提示','确定要删除"'+data.name+'" ?',function(){
 				$.ajax({
-					contentType:'application/x-www-form-urlencoded',
-					url : basePath + 'nm/jobs/crontabAction/deleteCrontabTask.action',
+					type : 'POST',
+					url : basePath + 'nm/jobs/crontabAction!deleteCrontabTask.action',
 					dataType : 'json',
 					data : {
-						crontabTaskId : data.id
+						crontabTaskId : data.crontabTaskId
 					},
 					success : function(result) {
 						printMsg(result.msg.message, result.msg.msgType);
@@ -202,7 +167,7 @@ $(function($){
 					}
 				});
 			 });
-		});
+		})
 		$("#resultTable tbody").on('click','a.task-change',function(){
 				var row = t.row( $(this).parents('tr') ),//获取按钮所在的行
 				data = row.data();
@@ -210,22 +175,22 @@ $(function($){
 				var status = data.status;
 				if (status == 1) {
 					status = 2;
-					$(this).text('启动中');
+					$(this).text('暂停中');
 					$(this).prop('disabled',true);
 				} else if (status == 2){
-					status = 1;
-					$(this).text('暂停中');
+					status = 1
+					$(this).text('启动中');
 					$(this).prop('disabled',true);
 				} else {
 					return false;
 				}			
 				
 				$.ajax({
-					contentType:'application/x-www-form-urlencoded',
-					url : basePath + 'nm/jobs/crontabAction/changeStatus.action',
+					type : 'POST',
+					url : basePath + 'nm/jobs/crontabAction!changeStatus.action',
 					dataType : 'json',
 					data : {
-						crontabTaskId : data.id,
+						crontabTaskId : data.crontabTaskId,
 						status : status
 					},
 					success : function(result) {
@@ -234,13 +199,13 @@ $(function($){
 						t.draw();
 					}
 				});
-		});
+		})
 	};
  	
 	$('#findBtn').click(function(){ 
-		searchResult(getSearchData());
+		serachResult(getserachData());
 	});
-	function getSearchData(){
+	function getserachData(){
 		var name = $.trim($('#name').val());
 		var des = $('#des').val();
 		var status = $('#status').val();
@@ -262,12 +227,12 @@ $(function($){
 			createTimeEnd : createTimeEnd,
 			lastModifyTimeStart : lastModifyTimeStart,
 			lastModifyTimeEnd : lastModifyTimeEnd
-		};
+		}
 		return data;
 	}
 	$('.form-inline').keydown(function(event){
 		if(event.keyCode == 13){
-			searchResult(getSearchData());
+			serachResult(getserachData());
 		}
 	});
 	
@@ -288,22 +253,21 @@ $(function($){
 		$('#crontabName').val(null);
 		$('#crontabDes').val(null);
 		$('#cronExpression').val(null);
-		$('#crontabTaskId').val(null);
+		$('#crontabTaskId').val(null)
 		$('#taskId').empty();
 		$('#taskId').parent().parent().show();
 		$('#taskName').val(null).parent().parent().addClass('none');
 		$.ajax({
 			type : 'POST',
-			url : basePath+'nm/jobs/taskAction/getTaskList.action',
-            data : '{}',
+			url : basePath+'nm/jobs/jobsAction!getTaskList.action',
 			dataType : 'json',
 			success : function(result) {
 				var rdata = result.data;
 				if(rdata){
 					var html =''; 
 					$.each(rdata,function(i,opt){
-						html += '<option value="'+opt.id+'">'+opt.name+'</option>';
-					});
+						html += '<option value="'+opt.id+'">'+opt.name+'</option>'
+					})
 					$('#taskId').append(html);
 					$('#taskId').chosen({no_results_text:'无',width:'400px'});
 				}
@@ -312,7 +276,7 @@ $(function($){
 		CronTab({
 			cronMode : 0,
 			expression : '0 0/5 * * * ?'
-		});
+		})
 		$('#crontab-time-modal').modal('show').draggable({
 			cursor: "pointer",
 			handle: "div.modal-header"
@@ -324,39 +288,36 @@ $(function($){
 			taskId = $('#taskId').val(),
 			des = $('#crontabDes').val(),
 			type = $('input[name=cronMode]:checked').val();
-		var data = {};
-		if(crontabTaskId != ''){
-			data.id = parseInt(crontabTaskId);
-		}
-		
 		if(type == 1){
 			var cronExpression = $('input[name=cronExpression]').eq(1).val();
 		}else{
 			var cronExpression = $('input[name=cronExpression]').eq(0).val();
 		}
-		if(!cronExpression){
-			printMsg('定时规则不能为空！', 2);
-			return false;
-		}
-		data.type = type;
-		data.cronExpression = cronExpression;
-		
+			
 		if(!name){
 			printMsg('名称不能为空！', 2);
 			return false;
 		}
-		data.name = name;
-		
-		if(!crontabTaskId && !taskId){
+		if(!crontabTaskId&&!taskId){
 			printMsg('作业名称不能为空！', 2);
 			return false;
 		}
-		data.taskId = taskId;
+		if(!cronExpression){
+			printMsg('定时规则不能为空！', 2);
+			return false;
+		}
 		$.ajax({
-			contentType:'application/json',
-			url : basePath + '/nm/jobs/crontabAction/saveCrontabTask.action',
+			type : 'POST',
+			url : basePath + 'nm/jobs/crontabAction!saveCrontabTask.action',
 			dataType : 'json',
-			data : JSON.stringify(data),
+			data : {
+				crontabTaskId:crontabTaskId,
+	    		name:name,
+	    		des:des,
+	    		taskId:taskId,
+	    		type : type,
+	    		cronExpression:cronExpression
+			},
 			success : function(result) {
 				printMsg(result.msg.message, result.msg.msgType);
 				if(result.success){
@@ -366,6 +327,41 @@ $(function($){
 			}
 		});
 	});
-	
+
+	/*定时作业，新建，+添加*/
+    $('#crontab-time-modal').on("click",".newTask",function(){
+        var url=$(this).attr('href');
+        if("pushState" in history){
+    		var href = url;
+	    	if(!((href.indexOf('#')>0 || href=='javascript:;')) && (href.indexOf('http')<0 && href.indexOf('https')<0 && href.indexOf('ftp')<0)){
+	    		href = basePath+"?"+href.substr(6,href.length-10);
+	    	}
+    	}
+        window.open(href);
+    }); 
+
+    /*新建定时任务，作业名称，刷新功能*/
+    $('#taskRefresh').click(function(){
+    	$('#taskId').empty();
+	    $.ajax({
+			type : 'POST',
+			url : basePath+'nm/jobs/jobsAction!getTaskList.action',
+			dataType : 'json',
+			success : function(result) {
+				var rdata = result.data;
+				if(rdata){
+					var html =''; 
+					$.each(rdata,function(i,opt){
+						html += '<option value="'+opt.id+'">'+opt.name+'</option>'
+					})
+					$('#taskId').append(html);
+					$('#taskId').chosen({no_results_text:'无',width:'400px'});
+					$('#taskId').trigger("chosen:updated");
+				}
+			}
+		});
+	});
+
     $('#findBtn').trigger('click');
-});
+
+})
