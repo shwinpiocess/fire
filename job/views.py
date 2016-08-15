@@ -4,6 +4,8 @@ from django.shortcuts import render, redirect
 from django.contrib import auth
 from django.http import JsonResponse
 
+from .models import *
+
 
 def login_user(request):
     if request.method == 'GET':
@@ -431,197 +433,225 @@ def searchAccountList(request):
 
 
 def getScriptList(request):
-    data = {
-        "draw": 0,
-        "start": 0,
-        "length": -1,
-        "recordsTotal": 15,
-        "recordsFiltered": 15,
-        "data": [
-            {
-                "scriptId": 31,
-                "name": "版本发布-启用监控",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 12:11:38",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 30,
-                "name": "版本发布-停止监控",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 12:11:38",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 27,
-                "name": "版本发布-备份DB",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 12:07:52",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 26,
-                "name": "版本发布-备份线上程序",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 12:07:52",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 23,
-                "name": "版本发布-对外开端口",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 12:01:01",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 22,
-                "name": "版本发布-对外停端口",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 12:01:01",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 19,
-                "name": "版本发布-启动前端进程",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 11:47:23",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 18,
-                "name": "版本发布-启动后台进程",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 11:47:23",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 17,
-                "name": "版本发布-更新DB",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 11:47:23",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 16,
-                "name": "版本发布-更新版本文件",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 11:47:23",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 15,
-                "name": "版本发布-停DB",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 11:47:23",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 14,
-                "name": "版本发布-停后台进程",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 11:47:23",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 13,
-                "name": "版本发布-停前端进程",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-11 11:47:23",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:13:18",
-                "taskName": ""
-            },
-            {
-                "scriptId": 5,
-                "name": "显示主机名",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-02 18:16:14",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-11 12:12:21",
-                "taskName": "批量服务器上执行脚本"
-            },
-            {
-                "scriptId": 4,
-                "name": "ls目录/tmp/demo/",
-                "type": 1,
-                "isPublic": 0,
-                "appId": 46,
-                "creater": "test",
-                "createTime": "2015-12-02 17:17:38",
-                "lastModifyUser": "test",
-                "lastModifyTime": "2015-12-02 18:12:02",
-                "taskName": "服务器之间传文件和执行脚本"
-            }
-        ]
-    }
+    # data = {
+    #     "draw": 0,
+    #     "start": 0,
+    #     "length": -1,
+    #     "recordsTotal": 15,
+    #     "recordsFiltered": 15,
+    #     "data": [
+    #         {
+    #             "scriptId": 31,
+    #             "name": "版本发布-启用监控",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 12:11:38",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 30,
+    #             "name": "版本发布-停止监控",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 12:11:38",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 27,
+    #             "name": "版本发布-备份DB",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 12:07:52",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 26,
+    #             "name": "版本发布-备份线上程序",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 12:07:52",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 23,
+    #             "name": "版本发布-对外开端口",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 12:01:01",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 22,
+    #             "name": "版本发布-对外停端口",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 12:01:01",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 19,
+    #             "name": "版本发布-启动前端进程",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 11:47:23",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 18,
+    #             "name": "版本发布-启动后台进程",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 11:47:23",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 17,
+    #             "name": "版本发布-更新DB",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 11:47:23",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 16,
+    #             "name": "版本发布-更新版本文件",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 11:47:23",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 15,
+    #             "name": "版本发布-停DB",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 11:47:23",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 14,
+    #             "name": "版本发布-停后台进程",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 11:47:23",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 13,
+    #             "name": "版本发布-停前端进程",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-11 11:47:23",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:13:18",
+    #             "taskName": ""
+    #         },
+    #         {
+    #             "scriptId": 5,
+    #             "name": "显示主机名",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-02 18:16:14",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-11 12:12:21",
+    #             "taskName": "批量服务器上执行脚本"
+    #         },
+    #         {
+    #             "scriptId": 4,
+    #             "name": "ls目录/tmp/demo/",
+    #             "type": 1,
+    #             "isPublic": 0,
+    #             "appId": 46,
+    #             "creater": "test",
+    #             "createTime": "2015-12-02 17:17:38",
+    #             "lastModifyUser": "test",
+    #             "lastModifyTime": "2015-12-02 18:12:02",
+    #             "taskName": "服务器之间传文件和执行脚本"
+    #         }
+    #     ]
+    # }
     if request.method == 'POST':
-        return JsonResponse(data)
+        print request.POST
+        app_id = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        scripts = Script.objects.all()
+
+        payload = {}
+        payload['draw'] = 0
+        payload['start'] = 0
+        payload['length'] = -1
+        payload['recordsTotal'] = scripts.count()
+        payload['recordsFiltered'] = scripts.count()
+        data = []
+        for script in scripts:
+            s = {
+                "scriptId": script.id,
+                "name": script.name,
+                "type": script.type,
+                "isPublic": script.is_public,
+                "appId": script.app_id,
+                "creater": script.creater,
+                "createTime": script.created,
+                "lastModifyUser": script.modifier,
+                "lastModifyTime": script.modified,
+                "taskName": ""
+            }
+            data.append(s)
+        payload['data'] = data
+        return JsonResponse(payload)
 
 
 def getCCModuleTree(request):
@@ -668,3 +698,30 @@ def getTaskList(request):
 :"1842605324","lastModifyTime":"2016-07-26 22:34:01","stepNum":1}]}
     if request.method == 'POST':
         return JsonResponse(data)
+
+
+def saveScript(request):
+    """新建脚本"""
+    if request.method == 'POST':
+        app_id = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        script_id = request.POST.get('scriptId')
+        name = request.POST.get('name')
+        content = request.POST.get('content')
+        type = int(request.POST.get('type'))
+
+        if not name or not content:
+            return JsonResponse({"msg":{"message":u"必填参数为空","msgType":2},"success":False})
+
+        if script_id:
+            script = Script.objects.get(id=script_id)
+            if script:
+                if app_id != script.app_id:
+                    return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
+        else:
+            if Script.objects.filter(name=name, app_id=app_id):
+                return JsonResponse({"msg":{"message":u"脚本名称【{0}】已被使用，请修改名称后保存！".format(name),"msgType":2},"success":False})
+            create_kwargs = {'app_id': app_id, 'creater': username, 'name': name, 'type': type, 'modifier': username, 'content': content}
+            Script.objects.create(**create_kwargs)
+            return JsonResponse({"msg":{"message":"脚本名称【{0}】保存成功!".format(name),"msgType":1},"success":True})

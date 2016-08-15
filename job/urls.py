@@ -20,4 +20,5 @@ urlpatterns = [
     url(r'nm/jobs/taskResultAction!searchTaskResultList.action$', views.searchTaskResultList, name='searchTaskResultList'),
     url(r'nm/jobs/crontabAction!getCrontabTaskList.action$', views.getCrontabTaskList, name='getCrontabTaskList'),
 	url(r'nm/jobs/jobsAction!getTaskList.action$', views.getTaskList, name='getTaskList'),
+    url(r'nm/components/scriptAction!saveScript.action$', views.saveScript, name='saveScript'),
 ]
