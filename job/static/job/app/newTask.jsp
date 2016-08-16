@@ -101,11 +101,11 @@
 				</td>
 				<td class="td_step_oper">
 				<div class="step_oper_div">
-				<div class="checkbox-inline step_oper_div_check">
+				<!-- <div class="checkbox-inline step_oper_div_check">
 					<label>
 						<input type="checkbox" name="stop-after-step">&nbsp;<span>完成后暂停</span>&nbsp;&nbsp;&nbsp;
 					</label>
-				</div>
+				</div> -->
 				<a href="javascript:void(0)" title="编辑" class="node-edit"><i class="fa fa-pencil"></i></a>
 				<a href="javascript:void(0)" title="上移" class="node-up"><i class="fa fa-arrow-up"></i></a>
 				<a href="javascript:void(0)" title="下移" class="node-down"><i class="fa fa-arrow-down"></i></a>
@@ -242,11 +242,11 @@
 				<td class="step_path_input"><input type="text" class="form-control step_param_input" maxlength="255" data-toggle="popover" data-placement="right" data-content="必填项"/></td>
 				<td class="td_step_oper">
 					<div class="step_oper_div">
-						<div class="checkbox-inline step_oper_div_check">
+						<!-- <div class="checkbox-inline step_oper_div_check">
 							<label>
 								<input type="checkbox" name="stop-after-step">&nbsp;<span>完成后暂停</span>&nbsp;&nbsp;&nbsp;
 							</label>
-						</div>
+						</div> -->
 						<a href="javascript:void(0)" title="编辑" class="node-edit"><i class="fa fa-pencil"></i></a>
 						<a href="javascript:void(0)" title="上移" class="node-up"><i class="fa fa-arrow-up"></i></a>
 						<a href="javascript:void(0)" title="下移" class="node-down"><i class="fa fa-arrow-down"></i></a>
