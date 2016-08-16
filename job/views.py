@@ -70,12 +70,12 @@ def getAppList(request):
                     {
                         "id": 46,
                         "groupId": 0,
-                        "applicationName": u"作业平台demo",
+                        "applicationName": u"球球大作战demo",
                         "companyId": 15,
                         "appType": 0
                     }
                 ],
-                "groupName": "蓝鲸"
+                "groupName": "巨人手游"
             }
         ]
     }
@@ -659,10 +659,58 @@ def getScriptList(request):
 
 
 def getCCModuleTree(request):
-    data = {"data":[{"text":"空闲机池","items":[{"text":"空闲机","moduleId":11471,"hostNum":0},{"text":"二级业务模块1","moduleId"
-:11472,"hostNum":0},{"text":"二级业务模块2","moduleId":11473,"hostNum":0}],"hostNum":0,"expanded":True,"setId"
+    data = {"data":[{"text":"业务机","items":[{"text":"proxy","moduleId":11471,"hostNum":1},{"text":"cent","moduleId"
+:11472,"hostNum":1},{"text":"room","moduleId":11473,"hostNum":2}],"hostNum":4,"expanded":True,"setId"
 :9669}],"success":True}
     if request.method == 'POST':
+        return JsonResponse(data)
+
+
+def getCCHosts(request):
+    servers = {
+        '11471': {
+            "data": [
+                {
+                    "source": 3,
+                    "alived": 1,
+                    "ipDesc": "chjansibleproxy",
+                    "ip": "10.20.32.146"
+                }
+            ],
+            "success": True
+        },
+        '11472': {
+            "data": [
+                {
+                    "source": 3,
+                    "alived": 1,
+                    "ipDesc": "qgzcent1",
+                    "ip": "123.207.80.104"
+                }
+            ],
+            "success": True
+        },
+        '11473': {
+            "data": [
+                {
+                    "source": 3,
+                    "alived": 1,
+                    "ipDesc": "qgzroom1",
+                    "ip": "192.168.67.14"
+                },
+                {
+                    "source": 3,
+                    "alived": 1,
+                    "ipDesc": "qgzroom2",
+                    "ip": "192.168.67.15"
+                }
+            ],
+            "success": True
+        }
+    }
+    if request.method == 'POST':
+        ccModuleIds = request.POST.get('ccModuleIds')
+        data = servers[ccModuleIds]
         return JsonResponse(data)
 
 
