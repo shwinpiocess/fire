@@ -701,7 +701,23 @@ def getTaskList(request):
 ,"ipList":"","serverSetId":0,"creater":"1842605324","createTime":"2016-07-26 22:34:01","lastModifyUser"
 :"1842605324","lastModifyTime":"2016-07-26 22:34:01","stepNum":1}]}
     if request.method == 'POST':
-        return JsonResponse(data)
+        data = []
+
+        tasks = Task.objects.all()
+        for task in tasks:
+            data.append({
+                'id': task.id,
+                'appId': task.appId,
+                'name': task.name,
+                'ipList': task.ipList,
+                'serverSetId': task.serverSetId,
+                'creater': task.creater,
+                'createTime': task.createTime.strftime('%Y-%m-%d %H:%M:%S'),
+                'lastModifyUser': task.lastModifyUser,
+                'lastModifyTime': task.lastModifyTime.strftime('%Y-%m-%d %H:%M:%S'),
+                'stepNum': task.stepNum
+            })
+        return JsonResponse({"draw":0,"start":0,"length":-1,"recordsTotal":tasks.count(),"recordsFiltered":tasks.count(),"data":data})
 
 
 def saveScript(request):
@@ -747,6 +763,9 @@ def saveTask(request):
 
         try:
             steps = json.loads(steps)
+            print "="* 80
+            print json.dumps(steps, indent=4)
+            print '='*80
 
             if not steps:
                 return JsonResponse({"msg":{"message":u"缺少步骤信息","msgType":2},"success":False})
@@ -763,6 +782,7 @@ def saveTask(request):
         if taskId > 0:
             task = Task.objects.filter(id=taskId)
             if task:
+                task = task[0]
                 if appId != task.appId:
                     return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
 

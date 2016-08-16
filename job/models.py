@@ -75,6 +75,11 @@ class Task(BaseModel):
 
     steps = property(get_steps, set_steps)
 
+    @property
+    def stepNum(self):
+        return self.steps.count()
+    
+
     # def save(self, *args, **kwargs):
     #     print 'bbbbbbbbbbbbbbbbbbbbbb'
     #     super(Task, self).save(*args, **kwargs)
