@@ -693,6 +693,7 @@ def getCrontabTaskList(request):
         return JsonResponse(data)
 
 def getTaskList(request):
+    """获取作业列表"""
     data = {"draw":0,"start":0,"length":-1,"recordsTotal":3,"recordsFiltered":3,"data":[{"id":550,"appId":8939,"name"
 :"a","ipList":"","serverSetId":0,"creater":"1842605324","createTime":"2016-08-01 15:35:36","lastModifyUser"
 :"1842605324","lastModifyTime":"2016-08-01 15:35:48","stepNum":2},{"id":544,"appId":8939,"name":"fdfdf"
@@ -867,20 +868,78 @@ def convert_to_step_block(steps):
             max_block = step.blockOrd
     # 
     blocks = []
-    for i in xrange(1, max_block):
+    for i in xrange(1, max_block + 1):
         block = {}
         s = []
         for step in steps:
             if step.blockOrd == i:
-                s.append(step)
+                s.append({
+                    "createTime": step.createTime.strftime('%Y-%m-%d %H:%M:%S'),
+                    "scriptTimeout": step.scriptTimeout,
+                    "isPause": step.isPause,
+                    "appId": step.appId,
+                    "fileTargetPath": step.fileTargetPath,
+                    "ord": step.ord,
+                    "creater": step.creater,
+                    "ipListStatus": [
+                        {
+                            "valid": 1,
+                            "source": 3,
+                            "alived": 0,
+                            "name": "host14",
+                            "ip": "192.168.67.14"
+                        }
+                    ],
+                    "type": step.type,
+                    "fileSource": step.fileSource,
+                    "serverSetId": step.serverSetId,
+                    "ipList": step.ipList,
+                    "name": step.name,
+                    "ccScriptId": step.ccScriptId,
+                    "scriptId": step.scriptId,
+                    "stepId": step.id,
+                    "paramType": step.paramType,
+                    "taskId": step.taskId,
+                    "fileSpeedLimit": step.fileSpeedLimit,
+                    "text": step.text,
+                    "scriptType": 0,
+                    "blockName": step.blockName,
+                    "blockOrd": step.blockOrd,
+                    "account": step.account,
+                    "ccScriptParam": step.ccScriptParam,
+                    # "companyId": 
+                })
 
         if s:
             block['blockOrd'] = i
-            block['blockName'] = s[0].blockName
-            block['type'] = s[0].type
-            block['steps'] = json.loads(serializers.serialize('json', s))
+            block['blockName'] = s[0]['blockName']
+            block['type'] = s[0]['type']
+            block['steps'] = s
             blocks.append(block)
     return blocks
 
 
+def getTaskDetail(request):
+    """获取作业详情"""
+    if request.method == 'POST':
+        appId = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+        taskId = int(request.POST.get('taskId'))
 
+        if taskId > 0:
+            task = Task.objects.filter(id=taskId)
+            if not task:
+                return JsonResponse({"msg":{"message":u"作业不存在！","msgType":2},"success":False})
+
+            task = task[0]
+            if appId != task.appId:
+                return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
+
+            blocks = convert_to_step_block(task.steps)
+            data = {
+                'taskId': task.id,
+                'taskName': task.name,
+                'blocks': blocks
+            }
+            print 'sssssssssssssssssssss'
+            return JsonResponse({'data': data, 'success' : True})

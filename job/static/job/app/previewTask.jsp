@@ -1,4 +1,5 @@
 
+
 <style>
 /*  	input{
 	    border-color: white !important;
@@ -213,11 +214,153 @@
 		
 <!-- 文件节点模版 end  -->
 
-<jsp:include page="serverIpList_comp.jsp"></jsp:include>
-<jsp:include page="_include.jsp">
-	<jsp:param name="js"
-		value="js/common/serverIpList/serverIpList.js,
-			js/common/fileTransferModule/fileTransferModule.js,
-			js/app/previewTask.js
-			" />
-</jsp:include>
+
+
+<!-- 服务器集合组建 -->
+<div id="serverIpModel" class="none serverIp-Model-IsExist">
+	<div class="row ml0 buttonGroup serverIpMode-1">
+		<input type="hidden" class="hidden-serverSetId">
+		<input type="hidden" class="hidden-serverip-string">
+		<div class="col-sm-5 p0">
+			<button type="button" class="btn btn-success showModel" style="width: 115px"><i class="fa fa-desktop"></i>&nbsp;选择服务器</button>
+		</div>		
+		<div class="btnGroup col-sm-7 none pr0" style="text-align: right;">
+			<a class="king-btn king-noborder king-primary copy-serverip-btn min-w0">复制IP</a>
+			<a class="king-btn king-noborder king-danger clearBtn min-w0">清空IP</a>
+			<a class="king-btn king-noborder king-danger clear-not-installed-Btn min-w0">清空Agent未安装</a>
+		</div>
+		<div class="col-sm-12 pl0 mt10 text-left server-text none"></div>
+		
+	</div>	
+	
+	<div class="serverIpMode-2 buttonGroup-2">
+		<input type="hidden" class="hidden-serverSetId-mode2">
+		<input type="hidden" class="hidden-serverip-mode2">
+		<ul class="show-short-ip none text-left pl10"></ul>
+		<div class="buttonArea-2">
+			<a href="javascript:;" class="serverip-count-link text-no-number">共0台</a>
+			<button type="button" class="king-btn king-default king-btn-mini showModel">添加</button>
+		</div>
+	</div>	
+		 
+	<div class="serverIp-result-table serverIpMode-1">
+		<table class="table table-header-bg mt40 mb0 serverIpResultTable table-bordered table-hover none">
+			<thead>
+				<tr>
+					<th>IP</th>
+					<th>状态</th>
+					<th class="table-header-option-th">操作</th>
+				</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
+	</div>
+	<!-- Modal -->
+	<div class="modal fade serverIpModal h1000" data-backdrop="false" data-keyboard="false"
+		role="dialog" >
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-loading-wrap none" style="z-index: 9999;position: absolute;left:0;top:0;width:100%;height:100%;text-align:center;vertial-align:middle;">
+						<img src="./img/loading_2_36x36.gif" style="margin-left:-18px;position:absolute;top:50%;margin-top:-36px;">
+				</div>
+				<div class="modal-body h450">
+						<div class="nav nav-tabs serverIpListtabs w h40 pl20 text-left">
+							<label class="pr5 radio-inline" style="cursor: pointer;"><input type="radio" name="serverSelect" value="1" checked disabled> 通过IP选择服务器</label>
+							<label class="pr5 radio-inline" style="cursor: pointer;"><input type="radio" name="serverSelect" value="2" disabled> 配置平台</label>
+							<label class="pr5 radio-inline" style="cursor: pointer;"><input type="radio" name="serverSelect" value="3" disabled> 手动添加</label>
+							<label class="pr5 radio-inline" style="cursor: pointer;"><input type="radio" name="serverSelect" value="4" disabled> 分组添加</label>
+						</div>
+						
+						<div class="tab-content" style="min-height:380px;position: relative;">
+							<!-- start 通过IP选择服务器 -->
+							<div class="ipList-tab-pane ipChoose-tab-pane w p10">								 
+									<input type="text" class="form-control w filterText"
+										placeholder="通过IP、主机名、Agent状态进行过滤...">
+									<table class="table table-header-bg mt10 w serverIp-result-table-thead table-hover serverIpTable"
+										style="margin-bottom: -1px;">
+										<thead>
+											<tr>
+												<th><input type="checkbox" class="selectedAllChecks" title="所有页"></th>
+												<th>平台名称</th>
+												<th>IP</th>
+												<th>状态</th>
+												<th>主机名</th>
+											</tr>
+										</thead>
+									</table>								 
+							</div>
+							<!-- end 通过IP选择服务器 -->
+							
+							<!-- start 配置平台 -->
+							<div class="ipList-tab-pane configCenter-tab-pane none w p10">
+								<div style="height: 384px; overflow: auto;text-align: left;" class="treeviewDiv"><div class="treeviewByAjax"></div></div> 
+							</div>
+							<!-- end 配置平台 -->
+							
+							<!-- start 手动添加 -->
+							<div class="ipList-tab-pane manually-tab-pane none w p10" >
+								<textarea class="form-control server-ip-textarea" rows="3" placeholder="请输入IP，以“空格”或者“回车”或者“;”分隔"  style="height: 375px"></textarea>							
+							</div>
+							<!-- end 手动添加 -->
+
+							<!-- start 服务器集 -->
+							<div class="ipList-tab-pane group-tab-pane none w p10" >
+								<input type="text" class="form-control w groupfilterText"
+									placeholder="通过名称、描述进行过滤...">
+								<table class="table table-header-bg mt10 w serverIp-result-table-thead table-hover groupTable"
+									style="margin-bottom: -1px;">
+									<thead>
+										<tr>
+											<th style="width: 5%">&nbsp;</th>
+											<th style="width: 25%">分组名称</th>
+											<th style="width: 70%">描述</th>
+										</tr>
+									</thead>
+								</table>									
+							</div>
+							<!-- end 服务器集 -->
+						</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-primary savebtn">添加</button>
+					<button type="button" class="btn btn-default cancelbtn">取消</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<!-- Modal -->
+	<div class="modal fade resultModal serverIpMode-2 h1000" data-backdrop="false" data-keyboard="false" role="dialog" >
+		<div class="modal-dialog" role="document">
+			<div class="modal-content text-left">
+				<div class="modal-body">
+					<table class="table table-header-bg mt40 mb0 serverIpMode2Table table-bordered table-hover">
+						<thead>
+							<tr>
+								<th>IP</th>
+								<th>状态</th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default hideMode2">关闭</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- 服务器集合组建 -->
+
+
+
+
+
+
+
+<script type="text/javascript" src="./js/common/serverIpList/serverIpList.js"></script>
+<script type="text/javascript" src="./js/common/fileTransferModule/fileTransferModule.js"></script>
+<script type="text/javascript" src="./js/app/previewTask.js"></script>
+
+
