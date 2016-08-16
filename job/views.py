@@ -838,8 +838,13 @@ def saveTask(request):
                 if name != task.name and Task.objects.exists(name=name, appId=appId):
                     return JsonResponse({"msg":{"message":u"作业名称【{0}】已被使用，请修改名称后保存！".format(name),"msgType":2},"success":False})
 
-            # TODO 更新Task
-
+                task.steps = steps
+                blocks = convert_to_step_block(task.steps)
+                data = {
+                    'taskId': task.id,
+                    'blocks': blocks
+                }
+                return JsonResponse({'data': data, 'success' : True})
         else:
             if Task.objects.filter(name=name, appId=appId):
                 return JsonResponse({"msg":{"message":u"作业名称【{0}】已被使用，请修改名称后保存！".format(name),"msgType":2},"success":False})
@@ -858,7 +863,6 @@ def saveTask(request):
                 'taskId': task.id,
                 'blocks': blocks
             }
-            print 'sssssssssssssssssssss'
             return JsonResponse({'data': data, 'success' : True})
 
             

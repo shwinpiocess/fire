@@ -56,17 +56,25 @@ class Task(BaseModel):
     def set_steps(self, steps):
         print 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
         step_objs = []
+        step_update_objs = []
         for step in steps:
-            step['task'] = self
             step['taskId'] = self.id
             step['appId'] = self.appId
             print 'self.id', self.id
-            step.pop('stepId')
-            if int(step['type']) == TYPE_SCRIPT:
-                step.pop('scriptContent')
-                step.pop('scriptType')
-            step_objs.append(Step(**step))
+            stepId = step.pop('stepId')
+            if stepId > 0:
+                step['id'] = stepId
+                step_update_objs.append(step)
+            else:
+                if int(step['type']) == TYPE_SCRIPT:
+                    step.pop('scriptContent')
+                    step.pop('scriptType')
+                step_objs.append(Step(**step))
         Step.objects.bulk_create(step_objs)
+
+        for s in step_update_objs:
+            pk = s.pop('id')
+            Step.objects.filter(pk=pk).update(**s)
         print 'cccccccccccccccddddddddddddddddddd'
         
 
@@ -134,8 +142,8 @@ class Step(BaseModel):
 
     task = property(get_taskId, set_taskId)
 
-    def save(self, *args, **kwargs):
-        task = kwargs.pop('task')
-        self.set_taskId(task)
-        super(Step, self).save(*args, **kwargs)
+    # def save(self, *args, **kwargs):
+    #     task = kwargs.pop('task')
+    #     self.set_taskId(task)
+    #     super(Step, self).save(*args, **kwargs)
         
