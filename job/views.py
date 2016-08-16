@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 
+import json
+
 from django.shortcuts import render, redirect
 from django.contrib import auth
+from django.core import serializers
 from django.http import JsonResponse
 
 from .models import *
+from .constant import *
 
 
 def login_user(request):
@@ -725,3 +729,138 @@ def saveScript(request):
             create_kwargs = {'app_id': app_id, 'creater': username, 'name': name, 'type': type, 'modifier': username, 'content': content}
             Script.objects.create(**create_kwargs)
             return JsonResponse({"msg":{"message":"脚本名称【{0}】保存成功!".format(name),"msgType":1},"success":True})
+
+
+def saveTask(request):
+    """新建作业"""
+    if request.method == 'POST':
+        appId = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        name = request.POST.get('name')
+        steps = request.POST.get('steps')
+        taskId = int(request.POST.get('taskId'))
+
+
+        if not name or not steps:
+            return JsonResponse({"msg":{"message":u"必填参数为空","msgType":2},"success":False})
+
+        try:
+            steps = json.loads(steps)
+
+            if not steps:
+                return JsonResponse({"msg":{"message":u"缺少步骤信息","msgType":2},"success":False})
+        except Exception, e:
+            return JsonResponse({"msg":{"message":u"缺少步骤信息","msgType":2},"success":False})
+
+        # 步骤合法性检查
+        for step in steps:
+            result = chek_step_parameters(appId, step)
+            if result != 'success':
+                return result
+            
+
+        if taskId > 0:
+            task = Task.objects.filter(id=taskId)
+            if task:
+                if appId != task.appId:
+                    return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
+
+                if name != task.name and Task.objects.exists(name=name, appId=appId):
+                    return JsonResponse({"msg":{"message":u"作业名称【{0}】已被使用，请修改名称后保存！".format(name),"msgType":2},"success":False})
+
+            # TODO 更新Task
+
+        else:
+            if Task.objects.filter(name=name, appId=appId):
+                return JsonResponse({"msg":{"message":u"作业名称【{0}】已被使用，请修改名称后保存！".format(name),"msgType":2},"success":False})
+
+            kwargs = {
+                'name': name,
+                'appId': appId,
+                'creater': username,
+                'lastModifyUser': username,
+                # 'steps': steps
+            }
+            task = Task.objects.create(**kwargs)
+            task.steps = steps
+            blocks = convert_to_step_block(task.steps)
+            data = {
+                'taskId': task.id,
+                'blocks': blocks
+            }
+            print 'sssssssssssssssssssss'
+            return JsonResponse({'data': data, 'success' : True})
+
+            
+def chek_step_parameters(appId, step):
+    """步骤参数合法性检查"""
+    name = step.get('name')
+    type = int(step.get('type'))
+    ord = step.get('ord')
+    account = step.get('account')
+    ipList = step.get('ipList')
+    serverSetId = int(step.get('serverSetId'))
+    stepId = int(step.get('stepId'))
+
+    if not name or type <= 0 or ord <=0:
+        return JsonResponse({"msg":{"message":u"参数不合法","msgType":2},"success":False})
+
+    if not account:
+        return JsonResponse({"msg":{"message":u"缺少账户信息","msgType":2},"success":False})
+
+    if not ipList and serverSetId <= 0:
+        return JsonResponse({"msg":{"message":u"缺少服务器IP信息","msgType":2},"success":False})
+
+    if type == TYPE_SCRIPT:
+        if stepId > 0:
+            step = Step.objects.filter(id=stepId)
+            if step:
+                if step.name != name and Step.objects.exists(name=name, appId=appId):
+                    return JsonResponse({"msg":{"message":u"执行脚本名称重复","msgType":2},"success":False})
+
+            elif Script.objects.filter(name=name, appId=appId):
+                return JsonResponse({"msg":{"message":u"执行脚本名称重复","msgType":2},"success":False})
+
+        elif Script.objects.filter(name=name, appId=appId):
+            return JsonResponse({"msg":{"message":u"执行脚本名称重复","msgType":2},"success":False})
+
+    if type == TYPE_FILE:
+        file_source = step.get('fileSource', '[]')
+        file_source = json.loads(file_source)
+
+        if not file_source:
+            return JsonResponse({"msg":{"message":u"缺少源文件信息","msgType":2},"success":False})
+        
+        file_target = step.get('fileTargetPath')
+        if not file_target:
+            return JsonResponse({"msg":{"message":u"缺少目标路径","msgType":2},"success":False})
+
+    return 'success'
+
+
+def convert_to_step_block(steps):
+    """将步骤转换成block形式"""
+    max_block = 1
+    for step in steps:
+        if step.blockOrd > max_block:
+            max_block = step.blockOrd
+    # 
+    blocks = []
+    for i in xrange(1, max_block):
+        block = {}
+        s = []
+        for step in steps:
+            if step.blockOrd == i:
+                s.append(step)
+
+        if s:
+            block['blockOrd'] = i
+            block['blockName'] = s[0].blockName
+            block['type'] = s[0].type
+            block['steps'] = json.loads(serializers.serialize('json', s))
+            blocks.append(block)
+    return blocks
+
+
+
