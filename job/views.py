@@ -696,13 +696,13 @@ def getCCHosts(request):
                     "source": 3,
                     "alived": 1,
                     "ipDesc": "qgzroom1",
-                    "ip": "192.168.67.14"
+                    "ip": "123.207.80.102"
                 },
                 {
                     "source": 3,
                     "alived": 1,
                     "ipDesc": "qgzroom2",
-                    "ip": "192.168.67.15"
+                    "ip": "123.207.80.103"
                 }
             ],
             "success": True
@@ -854,7 +854,6 @@ def saveTask(request):
                 'appId': appId,
                 'creater': username,
                 'lastModifyUser': username,
-                # 'steps': steps
             }
             task = Task.objects.create(**kwargs)
             task.steps = steps
@@ -925,6 +924,17 @@ def convert_to_step_block(steps):
         s = []
         for step in steps:
             if step.blockOrd == i:
+                ipList = step.ipList
+                ips = [item.split(':')[-1] for item in ipList.split(',')]
+                ipListStatus = []
+                for ip in ips:
+                    ipListStatus.append({
+                        "valid": 1,
+                        "source": 3,
+                        "alived": 1,
+                        # "name": "host14",
+                        "ip": ip
+                    })
                 s.append({
                     "createTime": step.createTime.strftime('%Y-%m-%d %H:%M:%S'),
                     "scriptTimeout": step.scriptTimeout,
@@ -933,15 +943,7 @@ def convert_to_step_block(steps):
                     "fileTargetPath": step.fileTargetPath,
                     "ord": step.ord,
                     "creater": step.creater,
-                    "ipListStatus": [
-                        {
-                            "valid": 1,
-                            "source": 3,
-                            "alived": 0,
-                            "name": "host14",
-                            "ip": "192.168.67.14"
-                        }
-                    ],
+                    "ipListStatus": ipListStatus,
                     "type": step.type,
                     "fileSource": step.fileSource,
                     "serverSetId": step.serverSetId,
@@ -993,5 +995,4 @@ def getTaskDetail(request):
                 'taskName': task.name,
                 'blocks': blocks
             }
-            print 'sssssssssssssssssssss'
             return JsonResponse({'data': data, 'success' : True})

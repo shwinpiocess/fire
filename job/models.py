@@ -54,7 +54,6 @@ class Task(BaseModel):
     lastModifyTime = models.DateTimeField(auto_now=True)
 
     def set_steps(self, steps):
-        print 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
         step_objs = []
         step_update_objs = []
         for step in steps:
@@ -75,7 +74,6 @@ class Task(BaseModel):
         for s in step_update_objs:
             pk = s.pop('id')
             Step.objects.filter(pk=pk).update(**s)
-        print 'cccccccccccccccddddddddddddddddddd'
         
 
     def get_steps(self):
