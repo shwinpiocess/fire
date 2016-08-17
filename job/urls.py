@@ -24,4 +24,5 @@ urlpatterns = [
     url(r'nm/jobs/jobsAction!saveTask.action$', views.saveTask, name='saveTask'),
     url(r'nm/jobs/jobsAction!getTaskDetail.action$', views.getTaskDetail, name='getTaskDetail'),
     url(r'nm/personal/appAction!getCCHosts.action$', views.getCCHosts, name='getCCHosts'),
+    url(r'nm/jobs/taskExecuteAction!executeTask.action$', views.executeTask, name='executeTask'),
 ]

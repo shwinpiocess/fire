@@ -996,3 +996,32 @@ def getTaskDetail(request):
                 'blocks': blocks
             }
             return JsonResponse({'data': data, 'success' : True})
+
+
+def executeTask(request):
+    """执行任务"""
+    if request.method == 'POST':
+        taskId = request.POST.get('taskId')
+        stepIds = request.POST.get('stepIds')
+
+        if not taskId:
+            return JsonResponse({"msg":{"message":u"参数不合法","msgType":2},"success":False})
+
+        task = Task.objects.filter(id=taskId)
+        if not task:
+            return JsonResponse({"msg":{"message":u"作业不存在！","msgType":2},"success":False})
+
+        task = task[0]
+        appId = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+        if appId != task.appId:
+                return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
+
+
+        kwargs = {
+            'operator': username,
+            'taskId': task.id,
+            'appId': appId,
+            'stepIds': stepIds
+        }
+        task_instance = task.create_task_instance(**kwargs)

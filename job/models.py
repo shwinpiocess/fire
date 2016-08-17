@@ -84,14 +84,36 @@ class Task(BaseModel):
     @property
     def stepNum(self):
         return self.steps.count()
-    
 
-    # def save(self, *args, **kwargs):
-    #     print 'bbbbbbbbbbbbbbbbbbbbbb'
-    #     super(Task, self).save(*args, **kwargs)
-    #     print 'cccccccccccccccccccc'
-    #     steps = kwargs.pop(steps)
-    #     self.set_steps(steps)
+    def create_task_instance(self, **kwargs):
+        """根据当前作业模板生成一个作业实例"""
+        print "kwargs", kwargs
+        if self.stepNum == 0:
+            return '作业没有步骤'
+
+        stepId_list = []
+        stepIds = kwargs.pop('stepIds')
+        if stepIds:
+            stepId_list = stepIds.split(',')
+
+        Taskinstance.objects.create(**kwargs)
+        print '开始创建实例的步骤'
+
+
+class Taskinstance(BaseModel):
+    """ task instance models"""
+    taskId = models.IntegerField()
+    appId = models.IntegerField()
+    name = models.CharField(max_length=512)
+    operator = models.CharField(max_length=128, blank=True, null=True)
+    startWay = models.IntegerField(blank=True, null=True)
+    currentStepId = models.IntegerField(blank=True, null=True)
+    status = models.IntegerField()
+    startTime = models.DateTimeField(blank=True, null=True)
+    endTime = models.DateTimeField(blank=True, null=True)
+    totalTime = models.FloatField(blank=True, null=True)
+    createTime = models.DateTimeField(auto_now_add=True)
+    mobileTaskId = models.IntegerField(blank=True, null=True)
 
 
 class Step(BaseModel):
@@ -145,3 +167,39 @@ class Step(BaseModel):
     #     self.set_taskId(task)
     #     super(Step, self).save(*args, **kwargs)
         
+
+class Stepinstance(BaseModel):
+    stepId = models.IntegerField()
+    taskInstanceId = models.IntegerField()
+    appId = models.IntegerField()
+    name = models.CharField(max_length=512)
+    type = models.IntegerField()
+    ord = models.IntegerField()
+    blockOrd = models.IntegerField(blank=True, null=True)
+    blockName = models.CharField(max_length=512, blank=True, null=True)
+    account = models.CharField(max_length=256, blank=True, null=True)
+    ipList = models.TextField(blank=True, null=True)
+    badIpList = models.TextField(blank=True, null=True)
+    scriptContent = models.TextField(blank=True, null=True)
+    scriptType = models.IntegerField(blank=True, null=True)
+    scriptParam = models.TextField(blank=True, null=True)
+    scriptTimeout = models.IntegerField(blank=True, null=True)
+    fileSource = models.TextField(blank=True, null=True)
+    fileTargetPath = models.CharField(max_length=256, blank=True, null=True)
+    fileSpeedLimit = models.IntegerField(blank=True, null=True)
+    text = models.CharField(max_length=256, blank=True, null=True)
+    operator = models.CharField(max_length=128, blank=True, null=True)
+    status = models.IntegerField()
+    retryCount = models.IntegerField()
+    startTime = models.DateTimeField(blank=True, null=True)
+    endTime = models.DateTimeField(blank=True, null=True)
+    totalTime = models.FloatField(blank=True, null=True)
+    totalIPNum = models.IntegerField(blank=True, null=True)
+    badIPNum = models.IntegerField(blank=True, null=True)
+    runIPNum = models.IntegerField(blank=True, null=True)
+    failIPNum = models.IntegerField(blank=True, null=True)
+    successIPNum = models.IntegerField(blank=True, null=True)
+    createTime = models.DateTimeField()
+    isPause = models.IntegerField(blank=True, null=True)
+    # companyId = models.IntegerField()
+    isUseCCFileParam = models.IntegerField(blank=True, null=True)
