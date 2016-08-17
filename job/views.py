@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect
 from django.contrib import auth
 from django.core import serializers
 from django.http import JsonResponse
+from django.utils import timezone
 
 from .models import *
 from .constant import *
@@ -761,9 +762,9 @@ def getTaskList(request):
                 'ipList': task.ipList,
                 'serverSetId': task.serverSetId,
                 'creater': task.creater,
-                'createTime': task.createTime.strftime('%Y-%m-%d %H:%M:%S'),
+                'createTime': timezone.localtime(task.createTime).strftime('%Y-%m-%d %H:%M:%S'),
                 'lastModifyUser': task.lastModifyUser,
-                'lastModifyTime': task.lastModifyTime.strftime('%Y-%m-%d %H:%M:%S'),
+                'lastModifyTime': timezone.localtime(task.lastModifyTime).strftime('%Y-%m-%d %H:%M:%S'),
                 'stepNum': task.stepNum
             })
         return JsonResponse({"draw":0,"start":0,"length":-1,"recordsTotal":tasks.count(),"recordsFiltered":tasks.count(),"data":data})
