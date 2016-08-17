@@ -119,6 +119,11 @@ class Task(BaseModel):
 
 class Taskinstance(BaseModel):
     """ task instance models"""
+    # startWay: 1.页面执行、2.API调用、3.定时执行
+    # status 1.未执行、2.正在执行、3.执行成功、
+    #        4.执行失败、5.跳过、6.忽略错误、
+    #        7.等待用户、8.手动结束、9.状态异常、
+    #        10.步骤强制终止中、11.步骤强制终止成功、12.步骤强制终止失败'
     taskId = models.IntegerField()
     appId = models.IntegerField()
     name = models.CharField(max_length=512)
