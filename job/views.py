@@ -824,7 +824,7 @@ def saveTask(request):
 
         # 步骤合法性检查
         for step in steps:
-            result = chek_step_parameters(appId, step)
+            result = check_step_parameters(appId, step)
             if result != 'success':
                 return result
             
@@ -866,7 +866,7 @@ def saveTask(request):
             return JsonResponse({'data': data, 'success' : True})
 
             
-def chek_step_parameters(appId, step):
+def check_step_parameters(appId, step):
     """步骤参数合法性检查"""
     name = step.get('name')
     type = int(step.get('type'))
