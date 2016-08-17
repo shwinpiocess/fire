@@ -24,7 +24,18 @@ class BaseModel(models.Model):
 
 
 class Script(BaseModel):
-    """script models"""
+    """script models
+    NAME 名称,
+    appId 开发商id,
+    TYPE 类型:1(shell脚本)、2(bat脚本)、3(perl脚本)、4(python脚本), 默认: 1
+    isPublic 是否公共脚本,0.否 1.是', 默认: 0
+    content 脚本内容',
+    creater 创建人,
+    createTime 创建时间',
+    lastModifyUser 最后修改人,
+    lastModifyTime 最后修改时间,
+    isCCScript 1.是  0.否', 默认 0
+    """
     TYPE_SHELL = 1
     TYPE_BAT = 2
     TYPE_PERL = 3
@@ -36,15 +47,17 @@ class Script(BaseModel):
         (TYPE_PERL, 'perl'),
         (TYPE_PYTHON, 'python'),
     )
-    name = models.CharField(max_length=512)
+    NAME = models.CharField(max_length=512)
     appId = models.IntegerField()
-    type = models.IntegerField(choices=TYPE_CHOICES, default=TYPE_SHELL)
-    is_public = models.BooleanField(default=False)
+    TYPE = models.IntegerField(choices=TYPE_CHOICES, default=TYPE_SHELL)
+    isPublic = models.IntegerField(default=0)
     content = models.TextField()
     creater = models.CharField(max_length=128)
-    created = models.DateTimeField(auto_now_add=True)
-    modifier = models.CharField(max_length=128)
-    modified = models.DateTimeField(auto_now=True)
+    createTime = models.DateTimeField(auto_now_add=True)
+    lastModifyUser = models.CharField(max_length=128)
+    lastModifyTime = models.DateTimeField(auto_now=True)
+    isCCScript = models.IntegerField(default=0)
+
 
 
 class Task(BaseModel):
