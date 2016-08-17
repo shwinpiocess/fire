@@ -109,6 +109,76 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            #'format': '%(asctime)s %(levelname)s %(pathname)s %(lineno)d %(funcName)s %(message)s'
+            'format': '%(asctime)s %(levelname)s %(message)s'
+        },
+        'simple': {
+            'format': '%(levelname)s %(message)s'
+        },
+    },
+    'handlers': {
+        'null': {
+            'level': 'DEBUG',
+            'class': 'django.utils.log.NullHandler',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple'
+        },
+        'rotating_file': {
+            'level': 'DEBUG',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(BASE_DIR, 'fire.log'),
+            'maxBytes': 5242880,
+            'backupCount': 5,
+            'formatter': 'verbose'
+        },
+        'mail_admins': {
+            'level': 'ERROR',
+            'class': 'django.utils.log.AdminEmailHandler',
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['null'],
+            'propagate': True,
+            'level': 'INFO',
+        },
+        'django.request': {
+            'handlers': ['mail_admins'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+        'job.views': {
+            'handlers': ['rotating_file'],
+            'level': 'DEBUG',
+        },
+        'job.models': {
+            'handlers': ['rotating_file'],
+            'level': 'DEBUG',
+        },
+        'job.tasks': {
+            'handlers': ['rotating_file'],
+            'level': 'DEBUG',
+        },
+        'job.socket': {
+            'handlers': ['rotating_file'],
+            'level': 'DEBUG',
+        },
+        'job.utils': {
+            'handlers': ['rotating_file'],
+            'level': 'DEBUG',
+        }
+    }
+}
+
+
 ###############################################################################
 # Celery Settings
 ###############################################################################
@@ -132,3 +202,6 @@ CELERY_TASK_TIME_LIMIT = None
 #}
 #
 #SCHEDULE_METADATA_LOCATION = os.path.join(BASE_DIR, '.phoenix_cycle')
+
+
+JOBOUTPUT_ROOT = os.path.join(BASE_DIR, 'job_output')
