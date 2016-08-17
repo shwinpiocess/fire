@@ -94,10 +94,27 @@ class Task(BaseModel):
         stepId_list = []
         stepIds = kwargs.pop('stepIds')
         if stepIds:
-            stepId_list = stepIds.split(',')
+            stepId_list = [int(item) for item in stepIds.split(',')]
 
-        Taskinstance.objects.create(**kwargs)
+        kwargs['status'] = 1
+        task_instance = Taskinstance.objects.create(**kwargs)
         print '开始创建实例的步骤'
+
+        step_instance_result = []
+        for step in self.steps:
+            for stepId in stepId_list:
+                if step.id == stepId:
+                    step_instance_kwargs = {'stepId': step.id, 'taskInstanceId': task_instance.id}
+                    result = step.create_step_instance(**step_instance_kwargs)
+                    step_instance_result.append(result)
+
+        if not all(step_instance_result):
+            return False
+
+        return task_instance
+
+
+
 
 
 class Taskinstance(BaseModel):
@@ -114,6 +131,30 @@ class Taskinstance(BaseModel):
     totalTime = models.FloatField(blank=True, null=True)
     createTime = models.DateTimeField(auto_now_add=True)
     mobileTaskId = models.IntegerField(blank=True, null=True)
+
+    @property
+    def can_start(self):
+        """判断任务是否处于能够启动的状态"""
+        # return self.status == 
+        return True
+
+    def _get_task_class(self):
+        from .tasks import RunJob
+        return RunJob
+    
+    def start(self, error_callback, success_callback, **kwargs):
+        """通过Celery运行任务"""
+        task_class = self._get_task_class()
+        if not self.can_start:
+            return False
+        else:
+            opts = {}
+            task_class().apply_async((self.pk,), opts, link_error=error_callback, link=success_callback)
+            return True
+
+    def signal_start(self, **kwargs):
+        """通知Celery调度系统开始执行该任务！"""
+        return self.start(None, None, **kwargs)
 
 
 class Step(BaseModel):
@@ -166,6 +207,56 @@ class Step(BaseModel):
     #     task = kwargs.pop('task')
     #     self.set_taskId(task)
     #     super(Step, self).save(*args, **kwargs)
+
+    def _get_step_instance_class(self):
+        return Stepinstance
+
+    def _get_step_instance_field_names(self):
+        return [
+            'stepId',
+            'taskInstanceId',
+            'appId',
+            'name',
+            'type',
+            'ord',
+            'blockOrd',
+            'blockName',
+            'account',
+            'ipList',
+            'scriptId',
+            'scriptParam',
+            'scriptTimeout',
+            'fileSource',
+            'fileTargetPath',
+            'fileSpeedLimit',
+            'text',
+            'isPause',
+        ]
+
+    def _update_step_instance_kwargs(self, **kwargs):
+        """更新用于创建step instance的参数"""
+        kwargs.pop('scriptId')
+        kwargs['status'] = 1
+        kwargs['retryCount'] = 0
+        return kwargs
+
+    def create_step_instance(self, **kwargs):
+        """根据当前步骤生成step instance"""
+        step_instance_class = self._get_step_instance_class()
+
+        create_kwargs = {}
+        for field_name in self._get_step_instance_field_names():
+            print 'field_name', field_name
+            if hasattr(self, field_name):
+                create_kwargs[field_name] = getattr(self, field_name)
+            elif field_name in kwargs:
+                create_kwargs[field_name] = kwargs[field_name]
+
+        new_kwargs = self._update_step_instance_kwargs(**create_kwargs)
+        step_instance = step_instance_class(**new_kwargs)
+        step_instance.save()
+        return True
+
         
 
 class Stepinstance(BaseModel):
@@ -199,7 +290,8 @@ class Stepinstance(BaseModel):
     runIPNum = models.IntegerField(blank=True, null=True)
     failIPNum = models.IntegerField(blank=True, null=True)
     successIPNum = models.IntegerField(blank=True, null=True)
-    createTime = models.DateTimeField()
+    createTime = models.DateTimeField(auto_now_add=True)
     isPause = models.IntegerField(blank=True, null=True)
     # companyId = models.IntegerField()
     isUseCCFileParam = models.IntegerField(blank=True, null=True)
+

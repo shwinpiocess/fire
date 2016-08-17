@@ -1022,6 +1022,26 @@ def executeTask(request):
             'operator': username,
             'taskId': task.id,
             'appId': appId,
-            'stepIds': stepIds
+            'stepIds': stepIds,
+            'name': task.name,
         }
         task_instance = task.create_task_instance(**kwargs)
+
+        if not task_instance:
+            return JsonResponse({"msg": {"message": u"作业【】启动失败!", "msgType": 1},"success": False})
+
+        result = task_instance.signal_start(**{})
+        if not result:
+            return JsonResponse({"msg": {"message": u"作业【】启动失败!", "msgType": 1},"success": False})
+
+        return JsonResponse({
+            "data": {
+                "taskInstanceName": task_instance.name,
+                "taskInstanceId": task_instance.id
+            },
+            "msg": {
+                "message": u"作业【%s】启动成功!" % task_instance.name,
+                "msgType": 1
+            },
+            "success": True
+        })
