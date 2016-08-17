@@ -3,6 +3,7 @@
 import os
 import time
 import datetime
+import traceback
 
 from celery import Task
 
