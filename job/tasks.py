@@ -20,24 +20,33 @@ class BaseTask(Task):
 
     def update_model(self, pk, _attempt=0, **updates):
         """更新model的给定字段"""
+        output_replacements = updates.pop('output_replacements', None) or []
         try:
-            instance = self.model.objects.get(pk=pk)
-            if updates:
-                update_fields = []
-                for field, value in updates.iteritems():
-                    setattr(instance, field, value)
-                    update_fields.append(field)
+            with transaction.atomic():
+                instance = self.model.objects.get(pk=pk)
+                if updates:
+                    update_fields = ['modified']
+                    for field, value in updates.items():
+                        if field in ('result_stdout', 'result_traceback'):
+                            for srch, repl in output_replacements:
+                                value = value.replace(srch, repl)
 
-                instance.save(update_fields=update_fields)
-            return instance
+                        setattr(instance, field, value)
+                        update_fields.append(field)
+                        if field == 'status':
+                            update_fields.append('failed')
+
+                    instance.save(update_fields=update_fields)
+                return instance
         except DatabaseError as e:
-            print ('Database error updating %s, retrying in 5 seconds (retry #%d): %s', self.model._meta.object_name, _attempt + 1, e)
+            logger.debug('Database error updating %s, retrying in 5 seconds (retry #%d): %s', self.model._meta.object_name, _attempt + 1, e)
             if _attempt < 5:
                 time.sleep(5)
-                return self.update_model(pk, _attempt=(_attempt + 1), **updates)
-            print('Failed to update %s after %d retries.', self.model._meta.object_name, _attempt)
+                return self.update_model(pk, _attempt=(_attempt + 1), output_replacements=output_replacements, **updates)
+            logger.error('Failed to update %s after %d retries.', self.model._meta.object_name, _attempt)
 
         return
+
 
     def build_private_data_dir(self, instance, **kwargs):
         """
@@ -95,6 +104,7 @@ class BaseTask(Task):
         """运行任务并捕获输出结果"""
         instance = self.update_model(pk, status=2, startTime=timezone.now())
         status, rc, tb = (4, None, '')
+        output_replacements = []
         try:
             self.pre_run_hook(instance, **kwargs)
             if instance.status != 2:
