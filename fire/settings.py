@@ -37,6 +37,9 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'djcelery',
+    
     'job',
 )
 
@@ -104,3 +107,28 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/1.8/howto/static-files/
 
 STATIC_URL = '/static/'
+
+
+###############################################################################
+# Celery Settings
+###############################################################################
+import djcelery
+djcelery.setup_loader()
+BROKER_URL = 'redis://localhost'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TRACE_STARTED = True
+CELERY_TASK_TIME_LIMIT = None
+#CELERY_TASK_SOFT_TIME_LIMIT = None
+#CELERYBEAT_SCHEDULER = 'celery.beat.PersistentScheduler'
+#CELERYBEAT_MAX_LOOP_INTERVAL = 60
+#CELERY_RESULT_BACKEND = 'djcelery.backends.database:DatabaseBackend'
+#CELERYBEAT_SCHEDULE = {
+#    'phoenix_scheduler': {
+#        'task': 'crane.tasks.crane_periodic_scheduler',
+#        'schedule': timedelta(seconds=30)
+#    }
+#}
+#
+#SCHEDULE_METADATA_LOCATION = os.path.join(BASE_DIR, '.phoenix_cycle')
