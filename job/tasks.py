@@ -3,8 +3,9 @@
 import os
 import uuid
 import time
-import datetime
 import traceback
+
+from django.utils import timezone
 
 from celery import Task
 
@@ -92,7 +93,7 @@ class BaseTask(Task):
 
     def run(self, pk, **kwargs):
         """运行任务并捕获输出结果"""
-        instance = self.update_model(pk, status=2, startTime=datetime.datetime.now())
+        instance = self.update_model(pk, status=2, startTime=timezone.now())
         status, rc, tb = (4, None, '')
         try:
             self.pre_run_hook(instance, **kwargs)
