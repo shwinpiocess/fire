@@ -35,7 +35,7 @@
     <link href="./css/bk_app_theme.css" rel="stylesheet">
     <link href="css/ijobs.css" rel="stylesheet">
   <script type="text/javascript">
-        var basePath = 'http://127.0.0.1:8000/';
+        var basePath = '/';
         var APPID = "46";
         var CsrfKey = "{{ csrf_token }}";
         var uin = "1842605324";
