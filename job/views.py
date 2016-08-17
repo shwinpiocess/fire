@@ -993,7 +993,11 @@ def getTaskDetail(request):
             blocks = convert_to_step_block(task.steps)
             data = {
                 'taskId': task.id,
+                'createTime': timezone.localtime(task.createTime).strftime('%Y-%m-%d %H:%M:%S'),
+                'lastModifyUser': task.lastModifyUser,
+                'creater': task.creater,
                 'taskName': task.name,
+                'lastModifyTime': timezone.localtime(task.lastModifyTime).strftime('%Y-%m-%d %H:%M:%S'),
                 'blocks': blocks
             }
             return JsonResponse({'data': data, 'success' : True})
