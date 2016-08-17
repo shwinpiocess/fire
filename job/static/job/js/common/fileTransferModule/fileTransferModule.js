@@ -243,6 +243,7 @@
 		},
 		setValue : function(data){
 			var me = this;
+
 			if(data && data instanceof Array){
 				me._fileSource.val(JSON.stringify(data));
 				for(var i= 0;i< data.length;i++){
