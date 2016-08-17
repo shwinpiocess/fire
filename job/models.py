@@ -196,6 +196,9 @@ class Taskinstance(BaseModel):
 
 class Step(BaseModel):
     """task step models"""
+    # type 步骤类型：1、执行脚本，2、传输文件，3、文本通知
+    # isPause 是否需要暂停，1.需要暂停、0.不需要暂停，默认：0。
+    # paramType 执行脚本入口参数类型 1.字符串入口参数  2.CC数据文件传参 默认: 1
     TYPE_SCRIPT = 1
     TYPE_FILE = 2
     TYPE_TEXT = 3
@@ -226,10 +229,10 @@ class Step(BaseModel):
     createTime = models.DateTimeField(auto_now_add=True)
     lastModifyUser = models.CharField(max_length=128)
     lastModifyTime = models.DateTimeField(auto_now=True)
-    isPause = models.BooleanField(default=False)
+    isPause = models.IntegerField(default=0)
     # companyId = models.IntegerField(db_column='companyId')
     ccScriptId = models.IntegerField(blank=True, null=True)
-    paramType = models.IntegerField(blank=True, null=True)
+    paramType = models.IntegerField(blank=True, null=True, default=1)
     ccScriptParam = models.TextField(blank=True, null=True)
 
     def set_taskId(self, task):
