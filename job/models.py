@@ -1,6 +1,12 @@
 # -*- coding: utf-8 -*-
+import os
+import json
+import base64
 
 from django.db import models
+from django.conf import settings
+
+from jsonfield import JSONField
 
 from .constant import *
 
@@ -136,6 +142,19 @@ class Taskinstance(BaseModel):
     totalTime = models.FloatField(blank=True, null=True)
     createTime = models.DateTimeField(auto_now_add=True)
     mobileTaskId = models.IntegerField(blank=True, null=True)
+    job_args = models.TextField(blank=True, default='', editable=False)
+    job_cwd = models.CharField(max_length=1024, blank=True, default='', editable=False)
+    job_env = JSONField(blank=True, default={}, editable=False)
+    job_explanation = models.TextField(blank=True, default='', editable=False)
+    start_args = models.TextField(blank=True, default='', editable=False)
+    result_stdout_text = models.TextField(blank=True, default='', editable=False)
+    result_stdout_file = models.TextField(blank=True, default='', editable=False)
+    result_traceback = models.TextField(blank=True, default='', editable=False)
+    celery_task_id = models.CharField(max_length=100, blank=True, default='', editable=False)
+
+    @property
+    def steps(self):
+        return Stepinstance.objects.filter(taskInstanceId=self.id)
 
     @property
     def can_start(self):
@@ -160,6 +179,19 @@ class Taskinstance(BaseModel):
     def signal_start(self, **kwargs):
         """通知Celery调度系统开始执行该任务！"""
         return self.start(None, None, **kwargs)
+
+    @property
+    def playbook(self):
+        """生成用于ansible-playbook执行使用的playbook文件"""
+        if not os.path.exists(settings.PROJECTS_ROOT):
+            os.mkdir(settings.PROJECTS_ROOT)
+        yaml_file = os.path.join(settings.PROJECTS_ROOT, self.celery_task_id.replace('-', ''))
+        f = file(yaml_file, 'wb')
+        f.write('---\n- hosts: all\n  user: qqdz\n  gather_facts: false\n  tasks:\n\n')
+        for step in self.steps:
+            f.write(step.task_yaml)
+        f.close()
+        return yaml_file
 
 
 class Step(BaseModel):
@@ -300,3 +332,20 @@ class Stepinstance(BaseModel):
     # companyId = models.IntegerField()
     isUseCCFileParam = models.IntegerField(blank=True, null=True)
 
+    def _generate_task_name(self):
+        return base64.encodestring(self.name.encode('utf-8'))
+
+    @property
+    def task_yaml(self):
+        """生成每个步骤对应的yaml文件中一个单独task的内容"""
+        task_name = self._generate_task_name()
+        if self.type == TYPE_SCRIPT:
+            script_file = self._build_script_file()
+            print 'script----args'
+            print {'inletParam': self.unified_args['inletParam']}
+            print 'ggggggggggggggggggggggggggggggggg'
+            return '    - name: %s\n      script: %s %s\n\n' %(task_name, script_file, self.scriptParam)
+        elif self.type == TYPE_FILE:
+            file_source = json.loads(self.fileSource)
+            src = file_source[0].get('file')
+            return '    - name: %s\n      copy: src=%s dest=%s\n' %(task_name, src, self.fileTargetPath)
