@@ -33,8 +33,8 @@ def inventories(request):
     taskInstanceId = request.POST.get('taskInstanceId', 0)
     task_instance = Taskinstance.objects.filter(id=taskInstanceId)
     if task_instance:
-        return JsonResponse({'data': task_instance[0].inventory})
-    return JsonResponse({'data': []})
+        return JsonResponse(task_instance[0].inventory)
+    return JsonResponse({})
 
 
 def index(request):
