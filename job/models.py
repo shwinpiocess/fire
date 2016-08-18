@@ -193,6 +193,69 @@ class Taskinstance(BaseModel):
     celery_task_id = models.CharField(max_length=100, blank=True, default='', editable=False)
 
     @property
+    def blocks(self):
+        """用于页面展示的block数据格式"""
+        max_block = 1
+        for step in self.steps:
+            if step.blockOrd > max_block:
+                max_block = step.blockOrd
+        # 
+        blocks = []
+        for i in xrange(1, max_block + 1):
+            block = {}
+            s = []
+            for step in self.steps:
+                if step.blockOrd == i:
+                    ipList = step.ipList
+                    ips = [item.split(':')[-1] for item in ipList.split(',')]
+                    #ipListStatus = []
+                    #for ip in ips:
+                    #    ipListStatus.append({
+                    #        "valid": 1,
+                    #        "source": 3,
+                    #        "alived": 1,
+                    #        # "name": "host14",
+                    #        "ip": ip
+                    #    })
+                    s.append({
+                        "badIPNum": step.badIPNum,
+                        "createTime": step.createTime.strftime('%Y-%m-%d %H:%M:%S'),
+                        "isPause": step.isPause,
+                        "appId": step.appId,
+                        "stepInstanceId": step.id,
+                        "ord": step.ord,
+                        "type": step.type,
+                        "endTime": step.endTime,
+                        "startTime": step.startTime,
+                        "totalIPNum": step.totalIPNum,
+                        "retryCount": step.retryCount,
+                        "name": step.name,
+                        "stepId": step.stepId,
+                        "failIPNum": step.failIPNum,
+                        "taskInstanceId": step.taskInstanceId,
+                        "text": step.text,
+                        "successIPNum": step.successIPNum,
+                        "status": step.status,
+                        "operationList": [],
+                        "blockName": step.blockName,
+                        "blockOrd": step.blockOrd,
+                        "operator": step.operator,
+                        "isUseCCFileParam": step.isUseCCFileParam,
+                        "account": step.account,
+                        "runIPNum": step.runIPNum,
+                        #"companyId": 672,
+                        "totalTime": 0
+                    })
+
+            if s:
+                block['blockOrd'] = i
+                block['blockName'] = s[0]['blockName']
+                block['type'] = s[0]['type']
+                block['stepInstances'] = s
+                blocks.append(block)
+        return blocks
+
+    @property
     def inventory(self):
         inventory = {}
         for step in self.steps:

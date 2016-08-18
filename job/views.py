@@ -1068,3 +1068,52 @@ def executeTask(request):
             },
             "success": True
         })
+
+
+def getTaskResult(request):
+    """获取任务结果"""
+    if request.method == 'POST':
+        appId = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        taskInstanceId = request.POST.get('taskInstanceId')
+        
+        if not taskInstanceId:
+            return JsonResponse({"msg":{"message":u"参数不合法","msgType":2},"success":False})
+
+        task_instance = Taskinstance.objects.filter(pk=taskInstanceId)
+        if not task_instance:
+            return JsonResponse({"msg":{"message":u"作业实例不存在","msgType":2},"success":False})
+
+        task_instance = task_instance[0]
+
+        if appId != task_instance.appId:
+            return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
+
+        instance_info = {
+            "taskId": task_instance.taskId,
+            "taskInstanceId": task_instance.id,
+            "createTime": task_instance.createTime,
+            "appId": task_instance.appId,
+            "status": task_instance.status,
+            "operationList": [],
+            "endTime": None,
+            "operator": task_instance.operator,
+            "startTime": task_instance.startTime,
+            "startWay": task_instance.startWay,
+            "name": task_instance.name,
+            "mobileTaskId": task_instance.mobileTaskId,
+            "totalTime": 0,
+            #"totalTime": task_instance.totalTime,
+            "currentStepId": task_instance.currentStepId
+        }
+        data = {
+            "md5": "bb053404832b1b5f528960f10bec4510",
+            "data": {
+                "isFinished": task_instance.status != 1 and task_instance.status != 2,
+                "blocks": task_instance.blocks,
+                "taskInstance": instance_info
+            },
+            "success": True
+        }
+        return JsonResponse(data)
