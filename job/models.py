@@ -192,6 +192,13 @@ class Taskinstance(BaseModel):
     celery_task_id = models.CharField(max_length=100, blank=True, default='', editable=False)
 
     @property
+    def inventory(self):
+        inventory = []
+        for step in self.steps:
+            inventory.extend([item.split(':')[-1] for item in step.ipList.split(',')])
+        return inventory
+
+    @property
     def steps(self):
         return Stepinstance.objects.filter(taskInstanceId=self.id)
 
