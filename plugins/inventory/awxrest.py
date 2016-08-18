@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import json
 import optparse
 import os
@@ -8,6 +9,7 @@ import urlparse
 
 import requests
 
+
 class InventoryScript(object):
 
     def __init__(self, **options):
@@ -16,9 +18,8 @@ class InventoryScript(object):
     def get_data(self):
         response = requests.post(self.url, {'taskInstanceId': self.inventory_id})
         response.raise_for_status()
-        data = json.loads(response.content)
-        inventories = data['data']
-        sys.stdout.write('\n'.join(inventories) + '\n')
+        sys.stdout.write(json.dumps(json.loads(response.content),
+                                    indent=self.indent) + '\n')
 
     def run(self):
         try:
@@ -35,7 +36,19 @@ class InventoryScript(object):
                 raise ValueError('Inventory ID must be an integer')
             if not self.inventory_id:
                 raise ValueError('No inventory ID specified')
-            self.get_data()
+            self.hostname = self.options.get('hostname', '')
+            self.list_ = self.options.get('list', False)
+            self.hostvars = bool(self.options.get('hostvars', False) or
+                                 os.getenv('INVENTORY_HOSTVARS', ''))
+            self.show_all = bool(self.options.get('show_all', False) or
+                                 os.getenv('INVENTORY_ALL', ''))
+            self.indent = self.options.get('indent', None)
+            if self.list_ and self.hostname:
+                raise RuntimeError('Only --list or --host may be specified')
+            elif self.list_ or self.hostname:
+                self.get_data()
+            else:
+                raise RuntimeError('Either --list or --host must be specified')
         except Exception, e:
             sys.stdout.write('%s\n' % json.dumps(dict(failed=True)))
             if self.options.get('traceback', False):
@@ -61,9 +74,27 @@ def main():
                       help='Base URL to access REST API, including username '
                       'and password for authentication (can also be specified'
                       ' using REST_API_URL environment variable)')
+    parser.add_option('--authtoken', dest='authtoken', default='',
+                      help='Authentication token used to access REST API (can '
+                      'also be specified using REST_API_TOKEN environment '
+                      'variable)')
     parser.add_option('-i', '--inventory', dest='inventory_id', type='int',
                       default=0, help='Inventory ID (can also be specified '
                       'using INVENTORY_ID environment variable)')
+    parser.add_option('--list', action='store_true', dest='list',
+                      default=False, help='Return JSON hash of host groups.')
+    parser.add_option('--hostvars', action='store_true', dest='hostvars',
+                      default=False, help='Return hostvars inline with --list,'
+                      ' under ["_meta"]["hostvars"]. Can also be specified '
+                      'using INVENTORY_HOSTVARS environment variable.')
+    parser.add_option('--all', action='store_true', dest='show_all',
+                      default=False, help='Return all hosts, including those '
+                      'marked as offline/disabled. Can also be specified '
+                      'using INVENTORY_ALL environment variable.')
+    parser.add_option('--host', dest='hostname', default='',
+                      help='Return JSON hash of host vars.')
+    parser.add_option('--indent', dest='indent', type='int', default=None,
+                      help='Indentation level for pretty printing output')
     options, args = parser.parse_args()
     InventoryScript(**vars(options)).run()
 
