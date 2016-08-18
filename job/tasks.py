@@ -459,9 +459,9 @@ class RunJob(BaseTask):
         env = super(RunJob, self).build_env(job, **kwargs)
         #env = self.add_ansible_venv(env)
         env['JOB_ID'] = str(job.pk)
-        #env['INVENTORY_ID'] = str(job.inventory.pk)
+        env['INVENTORY_ID'] = str(job.pk)
         env['ANSIBLE_CALLBACK_PLUGINS'] = plugin_path
-        #env['REST_API_URL'] = settings.INTERNAL_API_URL
+        env['INVENTORY_URL'] = settings.INVENTORY_URL
         #env['REST_API_TOKEN'] = job.task_auth_token or ''
         #env['CALLBACK_CONSUMER_PORT'] = str(settings.CALLBACK_CONSUMER_PORT)
         if getattr(settings, 'JOB_CALLBACK_DEBUG', False):
@@ -472,7 +472,7 @@ class RunJob(BaseTask):
         if not os.path.exists(cp_dir):
             os.mkdir(cp_dir, 448)
         env['ANSIBLE_SSH_CONTROL_PATH'] = os.path.join(cp_dir, 'ansible-ssh-%%h-%%p-%%r')
-        env['INVENTORY_HOSTVARS'] = str(True)
+        #env['INVENTORY_HOSTVARS'] = str(True)
         #cloud_cred = job.cloud_credential
         #if cloud_cred and cloud_cred.kind == 'aws':
         #    env['AWS_ACCESS_KEY'] = cloud_cred.username

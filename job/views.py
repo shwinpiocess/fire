@@ -8,6 +8,7 @@ from django.contrib import auth
 from django.core import serializers
 from django.http import JsonResponse
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import *
 from .constant import *
@@ -26,6 +27,14 @@ def login_user(request):
             return JsonResponse({'success': True})
         else:
             return JsonResponse({'success': False, 'msg': {'message': u'用户名或密码错误'}})
+
+@csrf_exempt
+def inventories(request):
+    taskInstanceId = request.POST.get('taskInstanceId', 0)
+    task_instance = Taskinstance.objects.filter(id=taskInstanceId)
+    if task_instance:
+        return JsonResponse({'data': task_instance[0].inventory})
+    return JsonResponse({'data': []})
 
 
 def index(request):
