@@ -206,3 +206,4 @@ CELERY_TASK_TIME_LIMIT = None
 
 JOBOUTPUT_ROOT = os.path.join(BASE_DIR, 'job_output')
 PROJECTS_ROOT = os.path.join(BASE_DIR, 'projects')
+INVENTORY_URL = 'http://127.0.0.1:8888/inventories/'
