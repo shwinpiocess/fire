@@ -2,6 +2,7 @@
 import os
 import json
 import base64
+import hashlib
 
 from django.db import models
 from django.conf import settings
@@ -193,9 +194,10 @@ class Taskinstance(BaseModel):
 
     @property
     def inventory(self):
-        inventory = []
+        inventory = {}
         for step in self.steps:
-            inventory.extend([item.split(':')[-1] for item in step.ipList.split(',')])
+            group = "group%s" % step.id
+            inventory[group] = [item.split(':')[-1] for item in step.ipList.split(',')]
         return inventory
 
     @property
@@ -233,9 +235,10 @@ class Taskinstance(BaseModel):
             os.mkdir(settings.PROJECTS_ROOT)
         yaml_file = os.path.join(settings.PROJECTS_ROOT, self.celery_task_id.replace('-', ''))
         f = file(yaml_file, 'wb')
-        f.write('---\n- hosts: all\n  user: qqdz\n  gather_facts: false\n  tasks:\n\n')
+        #f.write('---\n- hosts: all\n  user: qqdz\n  gather_facts: false\n  tasks:\n\n')
         for step in self.steps:
             f.write(step.task_yaml)
+            f.write('\n')
         f.close()
         return yaml_file
 
@@ -390,7 +393,7 @@ class Stepinstance(BaseModel):
     isUseCCFileParam = models.IntegerField(blank=True, null=True)
 
     def _generate_task_name(self):
-        return base64.encodestring(self.name.encode('utf-8'))
+        return hashlib.md5(self.name.encode('utf-8')).hexdigest()
 
     def _build_script_file(self):
         """生成步骤类型为执行脚本的步骤执行所用的的脚本文件
@@ -401,7 +404,7 @@ class Stepinstance(BaseModel):
 
         # TODO: 将脚本文件名定义为脚本名+脚本版本.脚本类型
         script_name = u'%s.%s' % (self.name, self.scriptType)
-        script_file = os.path.join(PROJECTS_ROOT, base64.encodestring(script_name.encode('utf-8')))
+        script_file = os.path.join(PROJECTS_ROOT, hashlib.md5(script_name.encode('utf-8')).hexdigest())
         script_content = base64.decodestring(self.scriptContent)
         with open(script_file, 'wb') as f:
             f.write(script_content)
@@ -414,9 +417,9 @@ class Stepinstance(BaseModel):
         task_name = self._generate_task_name()
         if self.type == TYPE_SCRIPT:
             script_file = self._build_script_file()
-            print 'ggggggggggggggggggggggggggggggggg'
-            return '    - name: %s\n      script: %s %s\n\n' %(task_name, script_file, self.scriptParam)
+            return '- hosts: group%s\n  user: %s\n  tasks:\n    - name: %s\n      script: %s %s\n' %(self.id, self.account, task_name, script_file, self.scriptParam)
         elif self.type == TYPE_FILE:
             file_source = json.loads(self.fileSource)
             src = file_source[0].get('file')
-            return '    - name: %s\n      copy: src=%s dest=%s\n' %(task_name, src, self.fileTargetPath)
+            #return '    - name: %s\n      copy: src=%s dest=%s\n' %(task_name, src, self.fileTargetPath)
+            return '- hosts: group%s\n  user: %s\n  tasks:\n    - name: %s\n      copy: %s %s\n' %(self.id, self.account, task_name, src, self.fileTargetPath)
