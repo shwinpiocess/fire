@@ -1,0 +1,72 @@
+import json
+import optparse
+import os
+import sys
+import traceback
+import urllib
+import urlparse
+
+import requests
+
+class InventoryScript(object):
+
+    def __init__(self, **options):
+        self.options = options
+
+    def get_data(self):
+        response = requests.post(self.url, {'taskInstanceId': self.inventory_id})
+        response.raise_for_status()
+        data = json.loads(response.content)
+        inventories = data['data']
+        sys.stdout.write('\n'.join(inventories) + '\n')
+
+    def run(self):
+        try:
+            self.url = self.options.get('base_url', '') or \
+                os.getenv('INVENTORY_URL', '')
+            if not self.url:
+                raise ValueError('No INVENTORY URL specified')
+            try:
+                # Command line argument takes precedence over environment
+                # variable.
+                self.inventory_id = int(self.options.get('inventory_id', 0) or
+                                        os.getenv('INVENTORY_ID', 0))
+            except ValueError:
+                raise ValueError('Inventory ID must be an integer')
+            if not self.inventory_id:
+                raise ValueError('No inventory ID specified')
+            self.get_data()
+        except Exception, e:
+            sys.stdout.write('%s\n' % json.dumps(dict(failed=True)))
+            if self.options.get('traceback', False):
+                sys.stderr.write(traceback.format_exc())
+            else:
+                sys.stderr.write('%s\n' % str(e))
+            if hasattr(e, 'response'):
+                if hasattr(e.response, 'content'):
+                    sys.stderr.write('%s\n' % e.response.content)
+                else:
+                    sys.stderr.write('%s\n' % e.response)
+            sys.exit(1)
+
+def main():
+    parser = optparse.OptionParser()
+    parser.add_option('-v', '--verbosity', action='store', dest='verbosity',
+                      default='1', type='choice', choices=['0', '1', '2', '3'],
+                      help='Verbosity level; 0=minimal output, 1=normal output'
+                      ', 2=verbose output, 3=very verbose output')
+    parser.add_option('--traceback', action='store_true',
+                      help='Raise on exception on error')
+    parser.add_option('-u', '--url', dest='base_url', default='',
+                      help='Base URL to access REST API, including username '
+                      'and password for authentication (can also be specified'
+                      ' using REST_API_URL environment variable)')
+    parser.add_option('-i', '--inventory', dest='inventory_id', type='int',
+                      default=0, help='Inventory ID (can also be specified '
+                      'using INVENTORY_ID environment variable)')
+    options, args = parser.parse_args()
+    InventoryScript(**vars(options)).run()
+
+if __name__ == '__main__':
+    main()
+
