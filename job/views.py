@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import base64
 
 from django.shortcuts import render, redirect
 from django.contrib import auth
@@ -644,14 +645,14 @@ def getScriptList(request):
         for script in scripts:
             s = {
                 "scriptId": script.id,
-                "name": script.name,
-                "type": script.type,
-                "isPublic": script.is_public,
-                "appId": script.app_id,
+                "name": script.NAME,
+                "type": script.TYPE,
+                "isPublic": script.isPublic,
+                "appId": script.appId,
                 "creater": script.creater,
-                "createTime": script.created,
-                "lastModifyUser": script.modifier,
-                "lastModifyTime": script.modified,
+                "createTime": script.createTime,
+                "lastModifyUser": script.lastModifyUser,
+                "lastModifyTime": script.lastModifyTime,
                 "taskName": ""
             }
             data.append(s)
@@ -836,10 +837,12 @@ def saveTask(request):
                 if appId != task.appId:
                     return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
 
-                if name != task.name and Task.objects.exists(name=name, appId=appId):
+                if name != task.name and Task.objects.filter(name=name, appId=appId).exists():
                     return JsonResponse({"msg":{"message":u"作业名称【{0}】已被使用，请修改名称后保存！".format(name),"msgType":2},"success":False})
 
+                task.name = name
                 task.steps = steps
+                task.save()
                 blocks = convert_to_step_block(task.steps)
                 data = {
                     'taskId': task.id,
@@ -889,13 +892,14 @@ def check_step_parameters(appId, step):
         if stepId > 0:
             step = Step.objects.filter(id=stepId)
             if step:
-                if step.name != name and Step.objects.exists(name=name, appId=appId):
+                step = step[0]
+                if step.name != name and Step.objects.filter(name=name, appId=appId).exists():
                     return JsonResponse({"msg":{"message":u"执行脚本名称重复","msgType":2},"success":False})
 
-            elif Script.objects.filter(name=name, appId=appId):
+            elif Script.objects.filter(NAME=name, appId=appId):
                 return JsonResponse({"msg":{"message":u"执行脚本名称重复","msgType":2},"success":False})
 
-        elif Script.objects.filter(name=name, appId=appId):
+        elif Script.objects.filter(NAME=name, appId=appId):
             return JsonResponse({"msg":{"message":u"执行脚本名称重复","msgType":2},"success":False})
 
     if type == TYPE_FILE:
@@ -936,7 +940,7 @@ def convert_to_step_block(steps):
                         # "name": "host14",
                         "ip": ip
                     })
-                s.append({
+                data = {
                     "createTime": step.createTime.strftime('%Y-%m-%d %H:%M:%S'),
                     "scriptTimeout": step.scriptTimeout,
                     "isPause": step.isPause,
@@ -957,13 +961,18 @@ def convert_to_step_block(steps):
                     "taskId": step.taskId,
                     "fileSpeedLimit": step.fileSpeedLimit,
                     "text": step.text,
-                    "scriptType": 0,
                     "blockName": step.blockName,
                     "blockOrd": step.blockOrd,
                     "account": step.account,
                     "ccScriptParam": step.ccScriptParam,
+                    "scriptParam": step.scriptParam,
                     # "companyId": 
-                })
+                }
+                if step.scriptId and step.scriptId > 0:
+                    script = Script.objects.get(pk=step.scriptId)
+                    data['scriptContent'] = base64.decodestring(script.content)
+                    data['scriptType'] = script.TYPE
+                s.append(data)
 
         if s:
             block['blockOrd'] = i

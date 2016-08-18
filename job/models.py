@@ -72,7 +72,27 @@ class Task(BaseModel):
     lastModifyUser = models.CharField(max_length=128)
     lastModifyTime = models.DateTimeField(auto_now=True)
 
+    def update_or_create_script(self, **kwargs):
+        NAME = kwargs['NAME']
+        print NAME
+        script = Script.objects.filter(NAME=NAME)
+        if script:
+            kwargs.pop('NAME')
+            script.update(**kwargs)
+            return script[0].id
+        return Script.objects.create(**kwargs).id
+
     def set_steps(self, steps):
+        """更新task的步骤信息
+        1. 步骤在库中不存在，新建
+        2. 步骤在库中存在，但是在本次提交中不存在，删除
+        3、步骤在库中和本次提交中都存在，更新
+        """
+        step_ids = []
+        for step in steps:
+            step_ids.append(step['stepId'])
+        Step.objects.exclude(id__in=step_ids).delete()
+            
         step_objs = []
         step_update_objs = []
         for step in steps:
@@ -80,19 +100,25 @@ class Task(BaseModel):
             step['appId'] = self.appId
             print 'self.id', self.id
             stepId = step.pop('stepId')
-            if stepId > 0:
-                step['id'] = stepId
-                step_update_objs.append(step)
-            else:
-                if int(step['type']) == TYPE_SCRIPT:
-                    step.pop('scriptContent')
-                    step.pop('scriptType')
-                step_objs.append(Step(**step))
-        Step.objects.bulk_create(step_objs)
+            if int(step['type']) == TYPE_SCRIPT:
+                kwargs = {}
+                kwargs['NAME'] = step['name']
+                kwargs['content'] = step.pop('scriptContent')
+                kwargs['TYPE'] = step.pop('scriptType')
+                kwargs['appId'] = self.appId
+                kwargs['creater'] = self.creater
+                kwargs['lastModifyUser'] = self.creater
+                step['scriptId'] = self.update_or_create_script(**kwargs)
+                if stepId > 0:
+                    Step.objects.filter(pk=stepId).update(**step)
+                else:
+                    Step.objects.create(**step)
 
-        for s in step_update_objs:
-            pk = s.pop('id')
-            Step.objects.filter(pk=pk).update(**s)
+            if int(step['type']) == TYPE_FILE:
+                if stepId > 0:
+                    Step.objects.filter(pk=stepId).update(**step)
+                else:
+                    Step.objects.create(**step)
         
 
     def get_steps(self):
@@ -256,6 +282,11 @@ class Step(BaseModel):
 
     task = property(get_taskId, set_taskId)
 
+    @property
+    def script(self):
+        if self.scriptId > 0:
+            return Script.objects.get(pk=self.scriptId)
+
     # def save(self, *args, **kwargs):
     #     task = kwargs.pop('task')
     #     self.set_taskId(task)
@@ -288,6 +319,9 @@ class Step(BaseModel):
 
     def _update_step_instance_kwargs(self, **kwargs):
         """更新用于创建step instance的参数"""
+        if self.script:
+            kwargs['scriptContent'] = self.script.content
+            kwargs['scriptType'] = self.script.TYPE
         kwargs.pop('scriptId')
         kwargs['status'] = 1
         kwargs['retryCount'] = 0
@@ -351,14 +385,28 @@ class Stepinstance(BaseModel):
     def _generate_task_name(self):
         return base64.encodestring(self.name.encode('utf-8'))
 
+    def _build_script_file(self):
+        """生成步骤类型为执行脚本的步骤执行所用的的脚本文件
+        """
+        PROJECTS_ROOT = settings.PROJECTS_ROOT
+        if not os.path.exists(PROJECTS_ROOT):
+            os.mkdir(PROJECTS_ROOT)
+
+        # TODO: 将脚本文件名定义为脚本名+脚本版本.脚本类型
+        script_name = u'%s.%s' % (self.name, self.scriptType)
+        script_file = os.path.join(PROJECTS_ROOT, base64.encodestring(script_name.encode('utf-8')))
+        script_content = base64.decodestring(self.scriptContent)
+        with open(script_file, 'wb') as f:
+            f.write(script_content)
+
+        return script_file
+
     @property
     def task_yaml(self):
         """生成每个步骤对应的yaml文件中一个单独task的内容"""
         task_name = self._generate_task_name()
         if self.type == TYPE_SCRIPT:
             script_file = self._build_script_file()
-            print 'script----args'
-            print {'inletParam': self.unified_args['inletParam']}
             print 'ggggggggggggggggggggggggggggggggg'
             return '    - name: %s\n      script: %s %s\n\n' %(task_name, script_file, self.scriptParam)
         elif self.type == TYPE_FILE:
