@@ -150,7 +150,13 @@ class Task(BaseModel):
         for step in self.steps:
             for stepId in stepId_list:
                 if step.id == stepId:
-                    step_instance_kwargs = {'stepId': step.id, 'taskInstanceId': task_instance.id}
+                    print {'id': task_instance.id}
+                    print {'step.name': step.name}
+                    print type(task_instance.id)
+                    print type(step.name)
+                    tmp = u"%s%s" % (task_instance.id, step.name)
+                    play_task_name = hashlib.md5(tmp.encode('utf-8')).hexdigest()
+                    step_instance_kwargs = {'stepId': step.id, 'taskInstanceId': task_instance.id, 'playTaskName': play_task_name}
                     result = step.create_step_instance(**step_instance_kwargs)
                     step_instance_result.append(result)
 
@@ -372,6 +378,7 @@ class Step(BaseModel):
         return [
             'stepId',
             'taskInstanceId',
+            'playTaskName',
             'appId',
             'name',
             'type',
@@ -454,6 +461,8 @@ class Stepinstance(BaseModel):
     isPause = models.IntegerField(blank=True, null=True)
     # companyId = models.IntegerField()
     isUseCCFileParam = models.IntegerField(blank=True, null=True)
+    # playTaskName字段是本步骤在playbook中的task name, 值为taskInstanceId+name的md5
+    playTaskName = models.CharField(max_length=256)
 
     def _generate_task_name(self):
         return hashlib.md5(self.name.encode('utf-8')).hexdigest()
@@ -480,9 +489,9 @@ class Stepinstance(BaseModel):
         task_name = self._generate_task_name()
         if self.type == TYPE_SCRIPT:
             script_file = self._build_script_file()
-            return '- hosts: group%s\n  user: %s\n  tasks:\n    - name: %s\n      script: %s %s\n' %(self.id, self.account, task_name, script_file, self.scriptParam)
+            return '- hosts: group%s\n  user: %s\n  tasks:\n    - name: %s\n      script: %s %s\n' %(self.id, self.account, self.playTaskName, script_file, self.scriptParam)
         elif self.type == TYPE_FILE:
             file_source = json.loads(self.fileSource)
             src = file_source[0].get('file')
             #return '    - name: %s\n      copy: src=%s dest=%s\n' %(task_name, src, self.fileTargetPath)
-            return '- hosts: group%s\n  user: %s\n  tasks:\n    - name: %s\n      copy: %s %s\n' %(self.id, self.account, task_name, src, self.fileTargetPath)
+            return '- hosts: group%s\n  user: %s\n  tasks:\n    - name: %s\n      copy: %s %s\n' %(self.id, self.account, self.playTaskName, src, self.fileTargetPath)
