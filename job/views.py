@@ -2,6 +2,8 @@
 
 import json
 import base64
+import datetime
+import traceback
 
 from django.shortcuts import render, redirect
 from django.contrib import auth
@@ -47,19 +49,25 @@ def event(request):
             print kwargs
             event_data = kwargs.get('event_data', {})
             name = event_data.get('name')
-            if 'startTime' in event_data:
-                new_kwargs = {'startTime': event_data['startTime'], 'status': 2}
-            if 'endTime' in event_data:
-                new_kwargs = {'endTime': event_data['endTime'], 'status': 3}
-            print 'name', name
-            print 'new_kwargs', new_kwargs
-            Stepinstance.objects.filter(playTaskName=name).update(**new_kwargs)
+            step_instance = Stepinstance.objects.filter(playTaskName=name)
+            if step_instance:
+                step_instance = step_instance[0]
+                if 'startTime' in event_data:
+                    startTime = event_data['startTime'].encode('utf-8')
+                    step_instance.startTime = timezone.make_aware(datetime.datetime.strptime(startTime, "%Y-%m-%dT%H:%M:%S.%fZ"))
+                    step_instance.status = 2
+                if 'endTime' in event_data:
+                    endTime = event_data['endTime'].encode('utf-8')
+                    step_instance.endTime = timezone.make_aware(datetime.datetime.strptime(endTime, "%Y-%m-%dT%H:%M:%S.%fZ"))
+                    step_instance.status = 3
+                step_instance.save()
+                #Stepinstance.objects.filter(playTaskName=name).update(**new_kwargs)
         else:
             StepInstanceEvent.objects.create(**kwargs)
 
         return JsonResponse({'success': True})
     except Exception, e:
-        print str(e)
+        print traceback.format_exc()
 
 
 def index(request):
