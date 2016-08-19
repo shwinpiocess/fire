@@ -60,7 +60,6 @@ def censor(obj, no_log=False):
             obj['results'] = "the output has been hidden due to the fact that 'no_log: true' was specified for this result"
     return obj
 
-f = file('/tmp/aaaaaa.txt', 'wa+')
 class BaseCallbackModule(object):
     '''
     Callback module for logging ansible-playbook job events via the REST API.
@@ -69,7 +68,6 @@ class BaseCallbackModule(object):
     def __init__(self):
         self.url = os.getenv('EVENT_URL', '')
         self._init_logging()
-        self.counter = 0
 
     def _init_logging(self):
         try:
@@ -78,13 +76,10 @@ class BaseCallbackModule(object):
             self.job_callback_debug = 0
         self.logger = logging.getLogger('job.plugins.callback.job_event_callback')
         if self.job_callback_debug >= 2:
-            f.write('111111111111')
             self.logger.setLevel(logging.DEBUG)
         elif self.job_callback_debug >= 1:
-            f.write('2222222222222222')
             self.logger.setLevel(logging.INFO)
         else:
-            f.write('333333333333333')
             self.logger.setLevel(logging.WARNING)
         handler = logging.StreamHandler()
         formatter = logging.Formatter('%(levelname)-8s %(process)-8d %(message)s')
@@ -100,7 +95,6 @@ class BaseCallbackModule(object):
         })
         headers = {'content-type': 'application/json'}
         response = requests.post(self.url, data=data, headers=headers)
-        f.write(response.text)
         response.raise_for_status()
 
     def _log_event(self, event, **event_data):
@@ -255,6 +249,8 @@ class JobCallbackModule(BaseCallbackModule):
 
     def __init__(self):
         self.job_id = int(os.getenv('JOB_ID', '0'))
+        self.stats = {}
+        self.current = None
         super(JobCallbackModule, self).__init__()
 
     def _log_event(self, event, **event_data):
@@ -316,12 +312,24 @@ class JobCallbackModule(BaseCallbackModule):
         self.playbook_on_no_hosts_remaining()
 
     def playbook_on_task_start(self, name, is_conditional):
-        self._log_event('playbook_on_task_start', name=name,
-                        is_conditional=is_conditional)
+        self._log_event('playbook_on_task_start', task=task,
+                            name=name, is_conditional=is_conditional)
+        if self.current is not None:
+            self._log_event('profile_task', name=self.current,
+                                endTime=datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ'))
+        self.current = name
+        self._log_event('profile_task', name=name,
+                            startTime=datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ'))
 
     def v2_playbook_on_task_start(self, task, is_conditional):
         self._log_event('playbook_on_task_start', task=task,
-                        name=task.get_name(), is_conditional=is_conditional)
+                            name=task.get_name(), is_conditional=is_conditional)
+        if self.current is not None:
+            self._log_event('profile_task',
+                            name=self.current, endTime=datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ'))
+        self.current = task.get_name()
+        self._log_event('profile_task', 
+                        name=task.get_name(), startTime=datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ'))
 
     def v2_playbook_on_cleanup_task_start(self, task):
         # re-using playbook_on_task_start event here for this v2-specific
@@ -388,7 +396,12 @@ class JobCallbackModule(BaseCallbackModule):
         d = {}
         for attr in ('changed', 'dark', 'failures', 'ok', 'processed', 'skipped'):
             d[attr] = getattr(stats, attr)
+
         self._log_event('playbook_on_stats', **d)
+
+        if self.current is not None:
+            self._log_event('profile_task', **{'name': self.current, 'endTime': datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S.%fZ')})
+
         self.terminate_ssh_control_masters()
 
     def v2_playbook_on_stats(self, stats):

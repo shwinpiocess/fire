@@ -7,6 +7,7 @@ urlpatterns = [
     url(r'^$', views.index, name='index'),
     url(r'login/$', views.login_user, name='login'),
     url(r'inventories/', views.inventories, name='inventories'),
+    url(r'event/', views.event, name='event'),
     url(r'fastExecuteScript/$', views.fastExecuteScript, name='fastExecuteScript'),
     # url(r'main/$', views.main, name='main'),
     url(r'nm/personal/appAction!getPlatId.action$', views.getPlatId, name='getPlatId'),

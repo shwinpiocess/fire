@@ -37,6 +37,31 @@ def inventories(request):
     return JsonResponse({})
 
 
+@csrf_exempt
+def event(request):
+    try:
+        kwargs = json.loads(request.body)
+
+        if kwargs.get('event') == 'profile_task':
+            print '111111111111111111111111111111'
+            print kwargs
+            event_data = kwargs.get('event_data', {})
+            name = event_data.get('name')
+            if 'startTime' in event_data:
+                new_kwargs = {'startTime': event_data['startTime'], 'status': 2}
+            if 'endTime' in event_data:
+                new_kwargs = {'endTime': event_data['endTime'], 'status': 3}
+            print 'name', name
+            print 'new_kwargs', new_kwargs
+            Stepinstance.objects.filter(playTaskName=name).update(**new_kwargs)
+        else:
+            StepInstanceEvent.objects.create(**kwargs)
+
+        return JsonResponse({'success': True})
+    except Exception, e:
+        print str(e)
+
+
 def index(request):
     return render(request, 'job/index.jsp')
 
@@ -1097,13 +1122,13 @@ def getTaskResult(request):
             "appId": task_instance.appId,
             "status": task_instance.status,
             "operationList": [],
-            "endTime": None,
+            "endTime": timezone.localtime(task_instance.endTime).strftime('%Y-%m-%d %H:%M:%S') if task_instance.endTime else None,
             "operator": task_instance.operator,
-            "startTime": task_instance.startTime,
+            "startTime": timezone.localtime(task_instance.startTime).strftime('%Y-%m-%d %H:%M:%S'),
             "startWay": task_instance.startWay,
             "name": task_instance.name,
             "mobileTaskId": task_instance.mobileTaskId,
-            "totalTime": 0,
+            "totalTime": task_instance.totalTime if task_instance.totalTime else 0,
             #"totalTime": task_instance.totalTime,
             "currentStepId": task_instance.currentStepId
         }

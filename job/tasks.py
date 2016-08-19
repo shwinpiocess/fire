@@ -387,7 +387,7 @@ class BaseTask(Task):
             except Exception:
                 pass
 
-        instance = self.update_model(pk, status=status, result_traceback=tb, output_replacements=output_replacements)
+        instance = self.update_model(pk, status=status, result_traceback=tb, output_replacements=output_replacements, endTime=timezone.now())
         self.post_run_hook(instance, **kwargs)
         #instance.socketio_emit_status(status)
         if status != 3 and not hasattr(settings, 'CELERY_UNIT_TEST'):
@@ -462,6 +462,7 @@ class RunJob(BaseTask):
         env['INVENTORY_ID'] = str(job.pk)
         env['ANSIBLE_CALLBACK_PLUGINS'] = plugin_path
         env['INVENTORY_URL'] = settings.INVENTORY_URL
+        env['EVENT_URL'] = settings.EVENT_URL
         #env['REST_API_TOKEN'] = job.task_auth_token or ''
         #env['CALLBACK_CONSUMER_PORT'] = str(settings.CALLBACK_CONSUMER_PORT)
         if getattr(settings, 'JOB_CALLBACK_DEBUG', False):

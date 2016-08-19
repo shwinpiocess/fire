@@ -6,6 +6,7 @@ import hashlib
 
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 from jsonfield import JSONField
 
@@ -75,7 +76,6 @@ class Task(BaseModel):
 
     def update_or_create_script(self, **kwargs):
         NAME = kwargs['NAME']
-        print NAME
         script = Script.objects.filter(NAME=NAME)
         if script:
             kwargs.pop('NAME')
@@ -99,7 +99,6 @@ class Task(BaseModel):
         for step in steps:
             step['taskId'] = self.id
             step['appId'] = self.appId
-            print 'self.id', self.id
             stepId = step.pop('stepId')
             if int(step['type']) == TYPE_SCRIPT:
                 kwargs = {}
@@ -133,7 +132,6 @@ class Task(BaseModel):
 
     def create_task_instance(self, **kwargs):
         """根据当前作业模板生成一个作业实例"""
-        print "kwargs", kwargs
         if self.stepNum == 0:
             return '作业没有步骤'
 
@@ -144,18 +142,13 @@ class Task(BaseModel):
 
         kwargs['status'] = 1
         task_instance = Taskinstance.objects.create(**kwargs)
-        print '开始创建实例的步骤'
 
         step_instance_result = []
         for step in self.steps:
             for stepId in stepId_list:
                 if step.id == stepId:
-                    print {'id': task_instance.id}
-                    print {'step.name': step.name}
-                    print type(task_instance.id)
-                    print type(step.name)
                     tmp = u"%s%s" % (task_instance.id, step.name)
-                    play_task_name = hashlib.md5(tmp.encode('utf-8')).hexdigest()
+                    play_task_name = settings.PLAYBOOK_PREFIX + hashlib.md5(tmp.encode('utf-8')).hexdigest()
                     step_instance_kwargs = {'stepId': step.id, 'taskInstanceId': task_instance.id, 'playTaskName': play_task_name}
                     result = step.create_step_instance(**step_instance_kwargs)
                     step_instance_result.append(result)
@@ -198,6 +191,22 @@ class Taskinstance(BaseModel):
     result_traceback = models.TextField(blank=True, default='', editable=False)
     celery_task_id = models.CharField(max_length=100, blank=True, default='', editable=False)
 
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields', [])
+        if self.startTime and self.endTime:
+            totalTime = self.endTime - self.startTime
+            elapsed_time = 0.0
+            if totalTime.days > 0:
+                elapsed_time += 3600.0 * totalTime.days
+            if totalTime.seconds > 0:
+                elapsed_time += totalTime.seconds
+            if totalTime.microseconds > 0:
+                elapsed_time += totalTime.microseconds / 1000000.0
+            self.totalTime = elapsed_time
+            if 'totalTime' not in update_fields:
+                update_fields.append('totalTime')
+        super(Taskinstance, self).save(*args, **kwargs)
+
     @property
     def blocks(self):
         """用于页面展示的block数据格式"""
@@ -225,14 +234,14 @@ class Taskinstance(BaseModel):
                     #    })
                     s.append({
                         "badIPNum": step.badIPNum,
-                        "createTime": step.createTime.strftime('%Y-%m-%d %H:%M:%S'),
+                        "createTime": timezone.localtime(step.createTime).strftime('%Y-%m-%d %H:%M:%S'),
                         "isPause": step.isPause,
                         "appId": step.appId,
                         "stepInstanceId": step.id,
                         "ord": step.ord,
                         "type": step.type,
-                        "endTime": step.endTime,
-                        "startTime": step.startTime,
+                        "endTime": timezone.localtime(step.endTime).strftime('%Y-%m-%d %H:%M:%S') if step.endTime else None,
+                        "startTime": timezone.localtime(step.startTime).strftime('%Y-%m-%d %H:%M:%S') if step.startTime else None,
                         "totalIPNum": step.totalIPNum,
                         "retryCount": step.retryCount,
                         "name": step.name,
@@ -250,7 +259,7 @@ class Taskinstance(BaseModel):
                         "account": step.account,
                         "runIPNum": step.runIPNum,
                         #"companyId": 672,
-                        "totalTime": 0
+                        "totalTime": step.totalTime if step.totalTime else 0
                     })
 
             if s:
@@ -464,6 +473,46 @@ class Stepinstance(BaseModel):
     # playTaskName字段是本步骤在playbook中的task name, 值为taskInstanceId+name的md5
     playTaskName = models.CharField(max_length=256)
 
+    def _caculate_elapsed_time(self):
+        elapsed_time = 0.0
+        if self.startTime and self.endTime:
+            print 'jjjjjjjjjjjjjjjjjjjjjjjjj'
+            totalTime = self.endTime - self.startTime
+            if totalTime.days > 0:
+                elapsed_time += 3600.0 * totalTime.days
+            if totalTime.seconds > 0:
+                elapsed_time += totalTime.seconds
+            if totalTime.microseconds > 0:
+                elapsed_time += totalTime.microseconds / 1000000.0
+        return elapsed_time
+
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields', [])
+
+        if self.startTime and self.endTime:
+            totalTime = self.endTime - self.startTime
+            elapsed_time = 0.0
+            if totalTime.days > 0:
+                elapsed_time += 3600.0 * totalTime.days
+            if totalTime.seconds > 0:
+                elapsed_time += totalTime.seconds
+            if totalTime.microseconds > 0:
+                elapsed_time += totalTime.microseconds / 1000000.0
+            self.totalTime = elapsed_time
+
+            if 'totalTime' not in update_fields:
+                update_fields.append('totalTime')
+
+        self.totalIPNum = len(self.ipList.split(','))
+        if 'totalIPNum' not in update_fields:
+            update_fields.append('totalIPNum')
+
+        self.runIPNum = len(self.ipList.split(','))
+        if 'runIPNum' not in update_fields:
+            update_fields.append('runIPNum')
+
+        super(Stepinstance, self).save(*args, **kwargs)
+
     def _generate_task_name(self):
         return hashlib.md5(self.name.encode('utf-8')).hexdigest()
 
@@ -489,9 +538,111 @@ class Stepinstance(BaseModel):
         task_name = self._generate_task_name()
         if self.type == TYPE_SCRIPT:
             script_file = self._build_script_file()
-            return '- hosts: group%s\n  user: %s\n  tasks:\n    - name: %s\n      script: %s %s\n' %(self.id, self.account, self.playTaskName, script_file, self.scriptParam)
+            return '- hosts: group%s\n  gather_facts: no\n  user: %s\n  name: %s\n  tasks:\n    - name: %s\n      script: %s %s\n' %(self.id, self.account, self.playTaskName, self.playTaskName, script_file, self.scriptParam)
         elif self.type == TYPE_FILE:
             file_source = json.loads(self.fileSource)
             src = file_source[0].get('file')
             #return '    - name: %s\n      copy: src=%s dest=%s\n' %(task_name, src, self.fileTargetPath)
-            return '- hosts: group%s\n  user: %s\n  tasks:\n    - name: %s\n      copy: %s %s\n' %(self.id, self.account, self.playTaskName, src, self.fileTargetPath)
+            return '- hosts: group%s\n  gather_facts: no\n  user: %s\n  name: %s\n  tasks:\n    - name: %s\n      copy: %s %s\n' %(self.id, self.account, self.playTaskName, self.playTaskName, src, self.fileTargetPath)
+
+
+class StepInstanceEvent(BaseModel):
+    """step instance event models"""
+    EVENT_TYPES = [
+        (3, 'runner_on_failed', 'Host Failed', True),
+        (3, 'runner_on_ok', 'Host OK', False),
+        (3, 'runner_on_error', 'Host Failure', True),
+        (3, 'runner_on_skipped', 'Host Skipped', False),
+        (3, 'runner_on_unreachable', 'Host Unreachable', True),
+        (3, 'runner_on_no_hosts', 'No Hosts Remaining', False),
+        (3, 'runner_on_async_poll', 'Host Polling', False),
+        (3, 'runner_on_async_ok', 'Host Async OK', False),
+        (3, 'runner_on_async_failed', 'Host Async Failure', True),
+        (3, 'runner_on_file_diff', 'File Difference', False),
+        (0, 'playbook_on_start', 'Playbook Started', False),
+        (2, 'playbook_on_notify', 'Running Handlers',False),
+        (2, 'playbook_on_no_hosts_matched', 'No Hosts Matched', False),
+        (2, 'playbook_on_no_hosts_remaining', 'No Hosts Remaining', False),
+        (2, 'playbook_on_task_start', 'Task Started', False),
+        (1, 'playbook_on_vars_prompt', 'Variables Prompted', False),
+        (2, 'playbook_on_setup', 'Gathering Facts', False),
+        (2, 'playbook_on_import_for_host', 'internal: on Import for Host', False),
+        (2, 'playbook_on_not_import_for_host', 'internal: on Not Import for Host', False),
+        (1, 'playbook_on_play_start', 'Play Started', False),
+        (1, 'playbook_on_stats', 'Playbook Complete', False)
+    ]
+    FAILED_EVENTS = [ x[1] for x in EVENT_TYPES if x[3] ]
+    EVENT_CHOICES = [ (x[1], x[2]) for x in EVENT_TYPES ]
+    LEVEL_FOR_EVENT = dict([ (x[1], x[0]) for x in EVENT_TYPES ])
+
+
+    class Meta:
+        ordering = ('pk',)
+
+    name = models.CharField(max_length=256)
+    event = models.CharField(max_length=100, choices=EVENT_CHOICES)
+    event_data = JSONField(blank=True, default={})
+    succeed = models.BooleanField(default=True, editable=False)
+    changed = models.BooleanField(default=False, editable=False)
+    host_name = models.CharField(max_length=1024, default='', editable=False)
+    play = models.CharField(max_length=1024, default='', editable=False)
+    role = models.CharField(max_length=1024, default='', editable=False)
+    task = models.CharField(max_length=1024, default='', editable=False)
+    created = models.DateTimeField('创建时间', default=None, editable=False)
+    modified = models.DateTimeField('修改时间', default=None, editable=False)
+
+
+    def save(self, *args, **kwargs):
+        update_fields = kwargs.get('update_fields', [])
+        res = self.event_data.get('res', None)
+        if self.event == 'runner_on_async_ok':
+            try:
+                if res.get('failed', False) or res.get('rc', 0) != 0:
+                    self.event = 'runner_on_async_failed'
+            except (AttributeError, TypeError):
+                pass
+
+        if self.event in self.FAILED_EVENTS:
+            if not self.event_data.get('ignore_errors', False):
+                self.succeed = False
+                if 'succeed' not in update_fields:
+                    update_fields.append('succeed')
+        if isinstance(res, dict) and res.get('changed', False):
+            self.changed = True
+            if 'changed' not in update_fields:
+                update_fields.append('changed')
+        if self.event == 'playbook_on_stats':
+            try:
+                failures_dict = self.event_data.get('failures', {})
+                dark_dict = self.event_data.get('dark', {})
+                self.succeed = bool(sum(failures_dict.values()) + sum(dark_dict.values()))
+                if 'succeed' not in update_fields:
+                    update_fields.append('succeed')
+                changed_dict = self.event_data.get('changed', {})
+                self.changed = bool(sum(changed_dict.values()))
+                if 'changed' not in update_fields:
+                    update_fields.append('changed')
+            except (AttributeError, TypeError):
+                pass
+
+        self.play = self.event_data.get('play', '').strip()
+        if 'play' not in update_fields:
+            update_fields.append('play')
+        self.task = self.event_data.get('task', '').strip()
+        if 'task' not in update_fields:
+            update_fields.append('task')
+        self.role = self.event_data.get('role', '').strip()
+        if 'role' not in update_fields:
+            update_fields.append('role')
+        self.host_name = self.event_data.get('host', '').strip()
+        if 'host_name' not in update_fields:
+            update_fields.append('host_name')
+
+        if not self.pk and not self.created:
+            self.created = timezone.now()
+            if 'created' not in update_fields:
+                update_fields.append('created')
+        if 'modified' not in update_fields or not self.modified:
+            self.modified = timezone.now()
+            update_fields.append('modified')
+        super(StepInstanceEvent, self).save(*args, **kwargs)
