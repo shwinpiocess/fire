@@ -93,7 +93,7 @@ class Task(BaseModel):
         step_ids = []
         for step in steps:
             step_ids.append(step['stepId'])
-        Step.objects.exclude(id__in=step_ids).delete()
+        Step.objects.filter(taskId=self.id).exclude(id__in=step_ids).delete()
             
         step_objs = []
         step_update_objs = []
