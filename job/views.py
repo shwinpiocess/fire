@@ -1150,3 +1150,109 @@ def getTaskResult(request):
             "success": True
         }
         return JsonResponse(data)
+
+
+def getStepExecuteDetail(request):
+    """获取步骤执行详情"""
+    if request.method == 'POST':
+        appId = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        stepInstanceId = request.POST.get('stepInstanceId')
+
+        if not stepInstanceId:
+            return JsonResponse({"msg":{"message":u"参数不合法","msgType":2},"success":False})
+
+        step_instance = Stepinstance.objects.filter(pk=stepInstanceId)
+        if not step_instance:
+            return JsonResponse({"msg":{"message":u"数据不存在","msgType":2},"success":False})
+
+        step_instance = step_instance[0]
+
+        if appId != step_instance.appId:
+            return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
+
+        step_detail = {
+            "badIPNum": step_instance.badIPNum,
+            "createTime": timezone.localtime(step_instance.createTime).strftime('%Y-%m-%d %H:%M:%S') if step_instance.createTime else None,
+            "isPause": step_instance.isPause,
+            "scriptTimeout": step_instance.scriptTimeout,
+            "appId": step_instance.appId,
+            "fileTargetPath": step_instance.fileTargetPath,
+            "ord": step_instance.ord,
+            "scriptParam": step_instance.scriptParam,
+            "endTime": timezone.localtime(step_instance.endTime).strftime('%Y-%m-%d %H:%M:%S') if step_instance.endTime else None,
+            "fileSource": step_instance.fileSource,
+            "type": step_instance.type,
+            "id": step_instance.id,
+            "startTime": timezone.localtime(step_instance.startTime).strftime('%Y-%m-%d %H:%M:%S') if step_instance.startTime else None,
+            "totalIPNum": step_instance.totalIPNum,
+            "retryCount": step_instance.retryCount,
+            "ipList": step_instance.ipList,
+            "name": step_instance.name,
+            "stepId": step_instance.stepId,
+            "failIPNum": step_instance.failIPNum,
+            "scriptContent": base64.decodestring(step_instance.scriptContent) if step_instance.scriptContent else '',
+            "taskInstanceId": step_instance.taskInstanceId,
+            "text": step_instance.text,
+            "successIPNum": step_instance.successIPNum,
+            "fileSpeedLimit": step_instance.fileSpeedLimit,
+            "scriptType": step_instance.scriptType,
+            "status": step_instance.status,
+            "operationList": [],
+            "blockName": step_instance.blockName,
+            "blockOrd": step_instance.blockOrd,
+            "operator": "",
+            "isUseCCFileParam": step_instance.isUseCCFileParam,
+            "badIpList": step_instance.badIpList,
+            "runIPNum": step_instance.runIPNum,
+            "account": step_instance.account,
+            #"companyId": 672,
+            "totalTime": step_instance.totalTime
+        }
+
+        gse_tasklog = {
+            "progress": 0,
+            "failSysIpCount": 0,
+            "gseTaskId": "GSETASK:20160818181836:8732",
+            "status": step_instance.status,
+            "successJobIpCount": 0,
+            "badJobIpCount": 0,
+            "isStop": 0,
+            "stepInstanceId": step_instance.id,
+            "serverIp": "10.204.174.47",
+            "endTime": timezone.localtime(step_instance.endTime).strftime('%Y-%m-%d %H:%M:%S') if step_instance.endTime else None,
+            "runningSysIpCount": 0,
+            "notStartJobIpCount": 0,
+            "startTime": timezone.localtime(step_instance.startTime).strftime('%Y-%m-%d %H:%M:%S') if step_instance.startTime else None,
+            "lastSuccessIpCount": 0,
+            "notStartSysIpCount": 0,
+            "retryCount": 1,
+            "isSystemStop": 0,
+            "totalJobIpCount": 0,
+            "failJobIpCount": 1,
+            "runningJobIpCount": 0,
+            "isValid": 0,
+            "totalSysIpCount": 0,
+            "totalTime": step_instance.totalTime,
+            "successSysIpCount": 0
+        }
+        
+        data = {
+            "md5": "ed5902f4d72b63aa4e588e817831fe4c",
+            "data": {
+                "stepDetail": step_detail,
+                "gseTaskLog": gse_tasklog,
+                "stepAnalyseResult": [
+                    {
+                        "count": 1,
+                        "tag": "",
+                        "resultType": 310,
+                        "resultTypeText": "Agent异常"
+                    }
+                ],
+                "isFinished": step_instance.status != 1 and step_instance.status != 2,
+            },
+            "success": True
+        }
+        return JsonResponse(data)

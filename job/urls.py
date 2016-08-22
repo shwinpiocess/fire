@@ -28,4 +28,5 @@ urlpatterns = [
     url(r'nm/personal/appAction!getCCHosts.action$', views.getCCHosts, name='getCCHosts'),
     url(r'nm/jobs/taskExecuteAction!executeTask.action$', views.executeTask, name='executeTask'),
     url(r'nm/jobs/taskResultAction!getTaskResult.action$', views.getTaskResult, name='getTaskResult'),
+    url(r'nm/jobs/taskResultAction!getStepExecuteDetail.action$', views.getStepExecuteDetail, name='getStepExecuteDetail'),
 ]
