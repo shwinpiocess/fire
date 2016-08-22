@@ -1262,25 +1262,150 @@ def getStepExecuteDetail(request):
             "runningJobIpCount": 0,
             "isValid": 0,
             "totalSysIpCount": 0,
-            "totalTime": step_instance.totalTime,
+            "totalTime": step_instance.totalTime if step_instance.totalTime else 0,
             "successSysIpCount": 0
         }
+
+        stepAnalyseResult = []
+        if step_instance.successIPNum and step_instance.successIPNum > 0:
+            stepAnalyseResult.append({
+                "count": step_instance.successIPNum,
+                "tag": "",
+                "resultType": 9,
+                "resultTypeText": "执行成功"
+            })
+        if step_instance.failIPNum and step_instance.failIPNum > 0:
+            stepAnalyseResult.append({
+                "count": step_instance.failIPNum,
+                "tag": "",
+                "resultType": 101,
+                "resultTypeText": "执行失败"
+            })
+        if step_instance.badIPNum and step_instance.badIPNum > 0:
+            stepAnalyseResult.append({
+                "count": step_instance.badIPNum,
+                "tag": "",
+                "resultType": 310,
+                "resultTypeText": "主机不可达"
+            })
         
         data = {
             "md5": "ed5902f4d72b63aa4e588e817831fe4c",
             "data": {
                 "stepDetail": step_detail,
                 "gseTaskLog": gse_tasklog,
-                "stepAnalyseResult": [
-                    {
-                        "count": 1,
-                        "tag": "",
-                        "resultType": 310,
-                        "resultTypeText": "Agent异常"
-                    }
-                ],
+                #"stepAnalyseResult": [
+                #    {
+                #        "count": 1,
+                #        "tag": "",
+                #        "resultType": 310,
+                #        "resultTypeText": "Agent异常"
+                #    }
+                #],
+                "stepAnalyseResult": stepAnalyseResult,
                 "isFinished": step_instance.status != 1 and step_instance.status != 2,
             },
             "success": True
         }
         return JsonResponse(data)
+
+
+def getIpListByResultType(request):
+    """根据执行返回值状态获取IP列表"""
+    if request.method == 'POST':
+        appId = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        stepInstanceId = request.POST.get('stepInstanceId')
+        resultType = int(request.POST.get('resultType'))
+
+        if not stepInstanceId or not resultType:
+            return JsonResponse({"msg":{"message":u"参数不合法","msgType":2},"success":False})
+
+        step_instance = Stepinstance.objects.filter(pk=stepInstanceId)
+        if not step_instance:
+            return JsonResponse({"msg":{"message":u"数据不存在","msgType":2},"success":False})
+
+        step_instance = step_instance[0]
+
+        if appId != step_instance.appId:
+            return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
+
+        qs = StepInstanceEvent.objects.filter(task=step_instance.playTaskName)
+        print 'qs', qs
+        if resultType == 9:
+            qs = qs.filter(event='runner_on_ok')
+            print 'jjjjjjjjjjj', qs
+        elif resultType == 101:
+            qs = qs.filter(event='runner_on_failed')
+        elif resultType == 310:
+            qs = qs.filter(event='runner_on_unreachable')
+        
+        payload = {}
+        data = []
+
+        for obj in qs:
+            data.append({
+                "startTime": "2016-08-22 14:39:54",
+                "errorType": 0,
+                "status": 9,
+                "retryCount": 0,
+                "stepInstanceId": step_instance.id,
+                "exitCode": 0,
+                "endTime": "2016-08-22 14:39:54",
+                "totalTime": 0.213,
+                "isJobIp": 1,
+                "ip": obj.host_name
+            })
+        payload['success'] = True
+        payload['data'] = data
+
+        return JsonResponse(payload)
+
+
+def getLogContentByIp(request):
+    if request.method == 'POST':
+        appId = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        stepInstanceId = request.POST.get('stepInstanceId')
+        ip = request.POST.get('ip')
+
+        if not stepInstanceId or not ip:
+            return JsonResponse({"msg":{"message":u"参数不合法","msgType":2},"success":False})
+
+        step_instance = Stepinstance.objects.filter(pk=stepInstanceId)
+        if not step_instance:
+            return JsonResponse({"msg":{"message":u"数据不存在","msgType":2},"success":False})
+
+        step_instance = step_instance[0]
+
+        if appId != step_instance.appId:
+            return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False}) 
+
+        qs = StepInstanceEvent.objects.filter(task=step_instance.playTaskName, host_name=ip)
+        if not qs:
+            return JsonResponse({"msg":{"message":u"日志内容不存在","msgType":2},"success":False})
+
+        step_instance_event = qs[0]
+
+        log_content = step_instance_event.event_data.get('res', {}).get('stdout', '')
+
+        payload = {
+            "data": {
+                "startTime": "2016-08-22 14:39:54",
+                "logContent": log_content,
+                "errorType": 0,
+                "retryCount": 0,
+                "status": 9,
+                "stepInstanceId": 8143,
+                "exitCode": 0,
+                "endTime": "2016-08-22 14:39:54",
+                "totalTime": 0.21299999952316284,
+                "ip": "1:10.104.139.177",
+                "isJobIp": 1
+            },
+            "success": True
+        }
+
+        return JsonResponse(payload)

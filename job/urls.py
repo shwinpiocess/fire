@@ -29,4 +29,6 @@ urlpatterns = [
     url(r'nm/jobs/taskExecuteAction!executeTask.action$', views.executeTask, name='executeTask'),
     url(r'nm/jobs/taskResultAction!getTaskResult.action$', views.getTaskResult, name='getTaskResult'),
     url(r'nm/jobs/taskResultAction!getStepExecuteDetail.action$', views.getStepExecuteDetail, name='getStepExecuteDetail'),
+    url(r'nm/jobs/taskResultAction!getIpListByResultType.action$', views.getIpListByResultType, name='getIpListByResultType'),
+    url(r'nm/jobs/taskResultAction!getLogContentByIp.action$', views.getLogContentByIp, name='getLogContentByIp'),
 ]

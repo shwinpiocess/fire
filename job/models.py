@@ -462,11 +462,11 @@ class Stepinstance(BaseModel):
     startTime = models.DateTimeField(blank=True, null=True)
     endTime = models.DateTimeField(blank=True, null=True)
     totalTime = models.FloatField(blank=True, null=True)
-    totalIPNum = models.IntegerField(blank=True, null=True)
-    badIPNum = models.IntegerField(blank=True, null=True)
+    totalIPNum = models.IntegerField(blank=True, null=True, default=0)
+    badIPNum = models.IntegerField(blank=True, null=True, default=0)
     runIPNum = models.IntegerField(blank=True, null=True)
-    failIPNum = models.IntegerField(blank=True, null=True)
-    successIPNum = models.IntegerField(blank=True, null=True)
+    failIPNum = models.IntegerField(blank=True, null=True, default=0)
+    successIPNum = models.IntegerField(blank=True, null=True, default=0)
     createTime = models.DateTimeField(auto_now_add=True)
     isPause = models.IntegerField(blank=True, null=True)
     # companyId = models.IntegerField()
@@ -575,7 +575,7 @@ class StepInstanceEvent(BaseModel):
     FAILED_EVENTS = [ x[1] for x in EVENT_TYPES if x[3] ]
     EVENT_CHOICES = [ (x[1], x[2]) for x in EVENT_TYPES ]
     LEVEL_FOR_EVENT = dict([ (x[1], x[0]) for x in EVENT_TYPES ])
-
+    UPDATE_HOST_EVENTS = ['runner_on_failed', 'runner_on_ok', 'runner_on_error', 'runner_on_unreachable']
 
     class Meta:
         ordering = ('pk',)
@@ -647,3 +647,16 @@ class StepInstanceEvent(BaseModel):
             self.modified = timezone.now()
             update_fields.append('modified')
         super(StepInstanceEvent, self).save(*args, **kwargs)
+        if self.event in self.UPDATE_HOST_EVENTS:
+            self.update_step_host_number()
+
+    def update_step_host_number(self):
+        """更新步骤中的主机数"""
+        for item in Stepinstance.objects.filter(playTaskName=self.task):
+            if self.event == 'runner_on_unreachable':
+                item.badIPNum += 1
+            elif self.event == 'runner_on_failed':
+                item.failIPNum += 1
+            elif self.event == 'runner_on_ok':
+                item.successIPNum += 1
+            item.save()
