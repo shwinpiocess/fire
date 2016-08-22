@@ -114,6 +114,14 @@
 						validSourceFileList($(this));
 					}
 				});
+				_tr.on('click',function(){
+					_tr.parent().addClass("del-pop");
+					//return false;
+				});
+				_tr.on('blur',function(){
+					_tr.parent().removeClass("del-pop");
+					//return false;
+				});
 				_tr.find('.accountEdit>select').on('change',function(){
 					if($(this).val()){
 						$(this).next().find('.chosen-single').css('border','1px solid #ddd')
@@ -133,7 +141,12 @@
 			var _tr = e.data.tr,
 				siblings = _tr.siblings(),
 				jqXHR = e.data.jqXHR;
-				console.log(e);
+			_tr.removeAttr("data-content");
+			_tr.popover({"viewport":false});
+			_tr.popover('hide');
+			_tr.parent().parent().removeAttr("data-content");
+			_tr.parent().parent().popover({"viewport":false});
+			_tr.parent().parent().popover('hide');
 			if(jqXHR){
 				jqXHR.abort();
 			}
@@ -141,6 +154,7 @@
 			if(siblings.length==1&&siblings.hasClass('blankTr')){
 				siblings.removeClass('none');
 			}
+			return false;
 		},
 		edit : function(e){
 			e.preventDefault();
@@ -150,6 +164,7 @@
 			_tr.find('.f_edit').removeClass('none');
 			_tr.find('.showModel').removeClass('none');
 //			_tr.find('.serverip-count-link').css({left:'10px'});
+			return false;
 		},
 		save : function(e){
 			e.preventDefault();
@@ -193,6 +208,12 @@
 			_tr.find(".show-short-ip").addClass("delOnly");
 			_tr.find('.f_edit').addClass('none');
 			_tr.find('.showModel').addClass('none');
+			_tr.removeAttr("data-content");
+			_tr.popover({"viewport":true});
+			_tr.popover('hide');
+			_tr.parent().parent().removeAttr("data-content");
+			_tr.parent().parent().popover({"viewport":true});
+			_tr.parent().parent().popover('hide');
 //			_tr.find('.serverip-count-link').css({left:'20px'});
 			$.each(_tbody.children('tr:not(.blankTr)'),function(i,opt){
 				var _tr = $(opt);
@@ -218,6 +239,7 @@
 				}
 			});
 			_fileSource.val(JSON.stringify(rs));
+			return false;
 		},
 		updateLocalTr : function(_tr, _data){
 			var me = this;
@@ -243,7 +265,6 @@
 		},
 		setValue : function(data){
 			var me = this;
-
 			if(data && data instanceof Array){
 				me._fileSource.val(JSON.stringify(data));
 				for(var i= 0;i< data.length;i++){
@@ -358,8 +379,9 @@
 				}
 			},
 			updateLocalTr : function(_data,percent){
+				var shortName = _data.fileName.substring(_data.fileName.lastIndexOf('/') + 1);
 				$.each(fileModule._tbody.find('.fileName'),function(i,opt){
-					if(_data.fileName.indexOf($(opt).text())!=-1){
+					if(shortName == $(opt).text()){
 						fileModule.updateLocalTr($(opt).parentsUntil('tr').parent(),_data);
 						return false;
 					}
@@ -375,8 +397,9 @@
 				return fileModule.validFileNameRepeat(_data);
 			},
 			fail : function(_fileName){
+				var shortName = _data.fileName.substring(_data.fileName.lastIndexOf('/') + 1);
 				$.each(fileModule._tbody.find('.fileName'),function(i,opt){
-					if(_fileName.indexOf($(opt).text())!=-1){
+					if(shortName == $(opt).text()){
 						$(opt).parentsUntil('tr').parent().find('.delFile').trigger('click');
 						return false;
 					}

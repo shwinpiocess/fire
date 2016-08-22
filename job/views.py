@@ -432,8 +432,8 @@ def getIpList(request):
             {
                 "source": 1,
                 "alived": 1,
-                "ipDesc": "Demo_Agent_91",
-                "ip": "10.104.50.91"
+                "ipDesc": "QQDZZ-BJ-MonitorProcess",
+                "ip": "172.28.6.241"
             },
             {
                 "source": 1,
@@ -1042,6 +1042,23 @@ def convert_to_step_block(steps):
                     script = Script.objects.get(pk=step.scriptId)
                     data['scriptContent'] = base64.decodestring(script.content)
                     data['scriptType'] = script.TYPE
+
+                if step.fileSource:
+                    file_source = json.loads(step.fileSource)
+                    for src in file_source:
+                        file_ipList = src.get('ipList')
+                        file_ipList_status = []
+                        for each in file_ipList.split(','):
+                            file_ipList_status.append({
+                                "valid": 1,
+                                "source": each.split(':')[0],
+                                "alived": 1,
+                                "name": "CHJ-AnsibleProxy",
+                                "ip": each.split(':')[-1]
+                            })
+                        src["ipListStatus"] = file_ipList_status
+                        print 'src', src
+                    data["fileSource"] = json.dumps(file_source)
                 s.append(data)
 
         if s:

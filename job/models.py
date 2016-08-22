@@ -543,7 +543,10 @@ class Stepinstance(BaseModel):
         elif self.type == TYPE_FILE:
             file_source = json.loads(self.fileSource)
             src = file_source[0].get('file')
+            ipList = file_source[0].get('ipList')
+            if ipList:
             #return '    - name: %s\n      copy: src=%s dest=%s\n' %(task_name, src, self.fileTargetPath)
+                return '- hosts: group%s\n  gather_facts: no\n  user: %s\n  name: %s\n  tasks:\n    - name: %s\n      get_url: url=http://%s%s dest=%s\n' %(self.id, self.account, self.playTaskName, self.playTaskName, ipList.split(':')[-1], src, self.fileTargetPath)
             return '- hosts: group%s\n  gather_facts: no\n  user: %s\n  name: %s\n  tasks:\n    - name: %s\n      copy: %s %s\n' %(self.id, self.account, self.playTaskName, self.playTaskName, src, self.fileTargetPath)
 
 
