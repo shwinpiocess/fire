@@ -775,7 +775,35 @@ def searchTaskResultList(request):
 :"fdf","operator":"1842605324","startWay":1,"currentStepId":678575,"status":3,"startTime":"2016-07-26 22:34:08","endTime":"2016-07-26 22:34:23","totalTime":15.085,"createTime":"2016-07-26 22:34:07","operationList"
 :None,"mobileTaskId":0}]}
     if request.method == 'POST':
-        return JsonResponse(data)
+        payload = {}
+
+        queryset = Taskinstance.objects.all()
+
+        payload['draw'] = 1
+        payload['start'] = 0
+        payload['length'] = 10
+        payload['recordsTotal'] = queryset.count()
+        payload['recordsfiltered'] = queryset.count()
+        data = []
+        for qs in queryset:
+            data.append({
+                "status": qs.status,
+                "totalTime": qs.totalTime if qs.totalTime else 0,
+                "mobileTaskId": qs.mobileTaskId,
+                "startTime": timezone.localtime(qs.startTime).strftime("%Y-%m-%d %H:%M:%S") if qs.startTime else None,
+                "operationList": None,
+                "endTime": timezone.localtime(qs.endTime).strftime("%Y-%m-%d %H:%M:%S") if qs.endTime else None,
+                "taskId": qs.taskId,
+                "appId": qs.appId,
+                "operator": qs.operator,
+                "createTime": timezone.localtime(qs.createTime).strftime("%Y-%m-%d %H:%M:%S") if qs.createTime else None,
+                "taskInstanceId": qs.id,
+                "name": qs.name,
+                "startWay": qs.startWay,
+                "currentStepId": qs.currentStepId
+            })
+        payload['data'] = data
+        return JsonResponse(payload)
 
 
 def getCrontabTaskList(request):
