@@ -600,6 +600,7 @@ class RunJob(BaseTask):
         #    args.append('scan_facts.yml')
         #else:
         #    args.append(job.playbook)
+        args.append('-vvvv')
         args.append(job.playbook)
         return args
 
