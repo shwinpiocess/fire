@@ -1407,6 +1407,8 @@ def getLogContentByIp(request):
         step_instance_event = qs[0]
 
         log_content = step_instance_event.event_data.get('res', {}).get('stdout', '')
+        if not log_content:
+            log_content = step_instance_event.event_data.get('res', {}).get('msg', '')
 
         payload = {
             "data": {
