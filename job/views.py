@@ -454,6 +454,48 @@ def getIpList(request):
         return JsonResponse(data)
 
 
+def saveAccount(request):
+    """新建执行账户"""
+    if request.method == 'POST':
+        app_id = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        account = request.POST.get('account')
+        if not account:
+            return JsonResponse({"msg":{"message":u"参数不合法","msgType":2},"success":False})
+
+        if Account.objects.filter(account=account, appId=app_id).exists():
+            return JsonResponse({"msg":{"message":u"执行账户【{0}】已存在".format(account),"msgType":2},"success":False})
+
+        Account.objects.create(account=account, appId=app_id, creater=username)
+
+        return JsonResponse({"msg":{"message":u"执行账户【{0}】保存成功".format(account),"msgType":1},"success":True})
+
+
+def deleteAccount(request):
+    """删除账户"""
+    if request.method == 'POST':
+        app_id = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        accounts = request.POST.get('account', '').split(',')
+        
+        if not accounts:
+            return JsonResponse({"msg":{"message":u"参数不合法","msgType":2},"success":False})
+
+        task_names = set()
+        steps = Step.objects.filter(account__in=accounts)
+        for s in steps:
+            task_names.add(s.task.name)
+
+        if task_names:
+            message = u"该账户正被以下作业使用，不能删除！作业名：【{0}】".format(','.join(task_names))
+            return JsonResponse({"msg":{"message":message,"msgType":2},"success":False})
+
+        Account.objects.filter(account__in=accounts).delete()
+        return JsonResponse({"msg":{"message":u"执行账户【{0}】删除成功".format(','.join(accounts)),"msgType":1},"success":True})
+
+
 def searchAccountList(request):
     data = {
         "draw": 0,
@@ -477,7 +519,27 @@ def searchAccountList(request):
         ]
     }
     if request.method == 'POST':
-        return JsonResponse(data)
+        appId = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        payload = {}
+        data = []
+        accounts = Account.objects.filter(appId=appId)
+        for obj in accounts:
+            data.append({
+                "account": obj.account,
+                "appId": obj.appId,
+                "creater": obj.creater,
+                "createTime": timezone.localtime(obj.createTime).strftime('%Y-%m-%d %H:%M:%S')
+            })
+
+        payload["draw"] = 0
+        payload["start"] = 0
+        payload["length"] = -1
+        payload["recordsTotal"] =  accounts.count()
+        payload["recordsFiltered"] = accounts.count()
+        payload['data'] = data
+        return JsonResponse(payload)
 
 
 def getScriptList(request):

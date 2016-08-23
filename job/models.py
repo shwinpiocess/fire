@@ -26,6 +26,17 @@ class BaseModel(models.Model):
             return u'%s-%s' %(self._meta.verbose_name, self.id)
 
 
+class Account(BaseModel):
+    account = models.CharField(max_length=255)
+    appId = models.IntegerField()
+    creater = models.CharField(max_length=128)
+    createTime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = (('account', 'appId'),)
+
+
+
 class Script(BaseModel):
     """script models
     NAME 名称,
@@ -367,7 +378,7 @@ class Step(BaseModel):
         self.taskId = task.id
 
     def get_taskId(self):
-        return self.taskId
+        return Task.objects.get(id=self.taskId)
 
     task = property(get_taskId, set_taskId)
 
