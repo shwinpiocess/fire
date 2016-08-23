@@ -113,8 +113,8 @@
                 <span class="fa fa-angle-right pull-right"></span>
               </a>
               <ul class="treeview-menu" style="background: #1C2026;">
-                <li><a href="./app/fastExecuteScript.jsp" class="fastExecuteScript"><i class="fa"></i>快速脚本执行</a></li> 
-                <li><a href="./app/fastPushFile.jsp" class="fastPushFile"><i class="fa"></i>快速分发文件</a></li>
+                <!--<li><a href="./app/fastExecuteScript.jsp" class="fastExecuteScript"><i class="fa"></i>快速脚本执行</a></li> 
+                <li><a href="./app/fastPushFile.jsp" class="fastPushFile"><i class="fa"></i>快速分发文件</a></li>-->
                 <li><a href="./app/jobList.jsp" class="jobList"><i class="fa"></i>常用作业执行</a></li> 
                 <li><a href="./app/newTask.jsp" class="newTask"><i class="fa"></i>新建作业</a></li> 
                 <li><a href="./app/crontabTaskList.jsp" class="crontabTaskList"><i class="fa"></i>定时作业</a></li>
