@@ -129,7 +129,7 @@
               <ul class="treeview-menu" style="background: #1C2026;">
                 <li><a href="./app/userList.jsp"><i class="fa"></i>账户管理</a></li>
                 <li><a href="./app/scriptList.jsp"><i class="fa"></i>脚本管理</a></li>
-                <li><a href="./app/groupList.jsp"><i class="fa"></i>分组管理</a></li>
+                <!--<li><a href="./app/groupList.jsp"><i class="fa"></i>分组管理</a></li>-->
               </ul>
             </li>
 <!--              <li class="treeview"> -->
