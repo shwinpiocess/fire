@@ -542,6 +542,105 @@ def searchAccountList(request):
         return JsonResponse(payload)
 
 
+def saveScript(request):
+    """新建脚本"""
+    if request.method == 'POST':
+        app_id = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        script_id = request.POST.get('scriptId')
+        name = request.POST.get('name')
+        content = request.POST.get('content')
+        TYPE = int(request.POST.get('type'))
+
+        if not name or not content:
+            return JsonResponse({"msg":{"message":u"必填参数为空","msgType":2},"success":False})
+
+        if script_id:
+            script = Script.objects.filter(id=script_id)
+            if script:
+                script = script[0]
+                if app_id != script.appId:
+                    return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
+
+                if script.NAME != name and Script.objects.filter(NAME=name, appId=script.appId).exists():
+                    return JsonResponse({"msg":{"message":u"脚本名称【{0}】已被使用，请修改名称后保存！".format(name),"msgType":2},"success":False})
+
+                script.NAME = name
+                script.content = content
+                script.TYPE = TYPE
+                script.save()
+
+                return JsonResponse({"msg":{"message":"脚本名称【{0}】保存成功!".format(name),"msgType":1},"success":True})
+        else:
+            if Script.objects.filter(NAME=name, appId=app_id):
+                return JsonResponse({"msg":{"message":u"脚本名称【{0}】已被使用，请修改名称后保存！".format(name),"msgType":2},"success":False})
+
+            create_kwargs = {'appId': app_id, 'creater': username, 'NAME': name, 'TYPE': TYPE, 'lastModifyUser': username, 'content': content}
+            Script.objects.create(**create_kwargs)
+
+            return JsonResponse({"msg":{"message":"脚本名称【{0}】保存成功!".format(name),"msgType":1},"success":True})
+
+
+def getScriptContent(request):
+    """获取脚本内容"""
+    if request.method == 'POST':
+        appId = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        scriptId = request.POST.get('scriptId')
+
+        if not scriptId:
+            return JsonResponse({"msg":{"message":u"参数不合法","msgType":2},"success":False})
+
+        script = Script.objects.filter(id=scriptId)
+        if not script:
+            return JsonResponse({"msg":{"message":u"脚本不存在","msgType":2},"success":False})
+
+        script = script[0]
+        if appId != script.appId:
+            return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
+
+        payload = {}
+        data = {}
+        data['content'] = base64.decodestring(script.content)
+        data['type'] = script.TYPE
+        payload['data'] = data
+        payload['success'] = True
+        return JsonResponse(payload)
+
+
+def deleteScript(request):
+    """删除脚本"""
+    if request.method == 'POST':
+        appId = int(request.META.get('HTTP_APPID'))
+        username = request.user.username
+
+        scriptId = request.POST.get('scriptId')
+        if not scriptId:
+            return JsonResponse({"msg":{"message":u"参数不合法","msgType":2},"success":False})
+
+        script = Script.objects.filter(id=scriptId)
+        if not script:
+            return JsonResponse({"msg":{"message":u"脚本不存在","msgType":2},"success":False})
+
+        script = script[0]
+        if appId != script.appId:
+            return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
+
+        task_names = set()
+        steps = Step.objects.filter(scriptId=scriptId, appId=appId)
+        for s in steps:
+            task_names.add(s.task.name)
+
+        if task_names:
+            message = u"脚本【{0}】已被作业引用，无法删除！作业名：{1}".format(script.NAME, ','.join(task_names))
+            return JsonResponse({"msg":{"message":message,"msgType":2},"success":False})
+
+        Script.objects.filter(id=scriptId).delete()
+        return JsonResponse({"msg":{"message":u"脚本【{0}】删除成功".format(script.NAME),"msgType":1},"success":True})
+
+
 def getScriptList(request):
     # data = {
     #     "draw": 0,
@@ -754,9 +853,9 @@ def getScriptList(request):
                 "isPublic": script.isPublic,
                 "appId": script.appId,
                 "creater": script.creater,
-                "createTime": script.createTime,
+                "createTime": timezone.localtime(script.createTime).strftime('%Y-%m-%d %H:%M:%S'),
                 "lastModifyUser": script.lastModifyUser,
-                "lastModifyTime": script.lastModifyTime,
+                "lastModifyTime": timezone.localtime(script.lastModifyTime).strftime('%Y-%m-%d %H:%M:%S'),
                 "taskName": ""
             }
             data.append(s)
@@ -901,33 +1000,6 @@ def getTaskList(request):
                 'stepNum': task.stepNum
             })
         return JsonResponse({"draw":0,"start":0,"length":-1,"recordsTotal":tasks.count(),"recordsFiltered":tasks.count(),"data":data})
-
-
-def saveScript(request):
-    """新建脚本"""
-    if request.method == 'POST':
-        app_id = int(request.META.get('HTTP_APPID'))
-        username = request.user.username
-
-        script_id = request.POST.get('scriptId')
-        name = request.POST.get('name')
-        content = request.POST.get('content')
-        type = int(request.POST.get('type'))
-
-        if not name or not content:
-            return JsonResponse({"msg":{"message":u"必填参数为空","msgType":2},"success":False})
-
-        if script_id:
-            script = Script.objects.get(id=script_id)
-            if script:
-                if app_id != script.app_id:
-                    return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False})
-        else:
-            if Script.objects.filter(name=name, app_id=app_id):
-                return JsonResponse({"msg":{"message":u"脚本名称【{0}】已被使用，请修改名称后保存！".format(name),"msgType":2},"success":False})
-            create_kwargs = {'app_id': app_id, 'creater': username, 'name': name, 'type': type, 'modifier': username, 'content': content}
-            Script.objects.create(**create_kwargs)
-            return JsonResponse({"msg":{"message":"脚本名称【{0}】保存成功!".format(name),"msgType":1},"success":True})
 
 
 def saveTask(request):

@@ -20,11 +20,15 @@ urlpatterns = [
     url(r'nm/components/accountAction!searchAccountList.action$', views.searchAccountList, name='searchAccountList'),
     url(r'nm/personal/appAction!getCCModuleTree.action$', views.getCCModuleTree, name='getCCModuleTree'),
     url(r'nm/components/nmServerSetAction!searchServerSet.action$', views.searchServerSet, name='searchServerSet'),
+    
+    url(r'nm/components/scriptAction!getScriptContent.action$', views.getScriptContent, name='getScriptContent'),
+    url(r'nm/components/scriptAction!deleteScript.action$', views.deleteScript, name='deleteScript'),
+    url(r'nm/components/scriptAction!saveScript.action$', views.saveScript, name='saveScript'),
     url(r'nm/components/scriptAction!getScriptList.action$', views.getScriptList, name='getScriptList'),
+
     url(r'nm/jobs/taskResultAction!searchTaskResultList.action$', views.searchTaskResultList, name='searchTaskResultList'),
     url(r'nm/jobs/crontabAction!getCrontabTaskList.action$', views.getCrontabTaskList, name='getCrontabTaskList'),
 	url(r'nm/jobs/jobsAction!getTaskList.action$', views.getTaskList, name='getTaskList'),
-    url(r'nm/components/scriptAction!saveScript.action$', views.saveScript, name='saveScript'),
     url(r'nm/jobs/jobsAction!saveTask.action$', views.saveTask, name='saveTask'),
     url(r'nm/jobs/jobsAction!getTaskDetail.action$', views.getTaskDetail, name='getTaskDetail'),
     url(r'nm/personal/appAction!getCCHosts.action$', views.getCCHosts, name='getCCHosts'),

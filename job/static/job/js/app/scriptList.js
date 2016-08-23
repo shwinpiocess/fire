@@ -103,7 +103,7 @@
 			                render : function(data, type, row, meta){
 			                	var /*btnGroup ='<a class="king-btn king-default king-btn-mini" title="查看作业引用">查看作业引用</a>';*/
 			                	btnGroup = '<div class="btn-list" style="min-width:120px;"><a class="king-btn king-primary king-btn-mini edit" title="编辑">编辑</a>';
-			                	btnGroup += '<a  class="king-btn king-primary king-btn-mini dotask" title="去执行">去执行</a>'
+			                	//btnGroup += '<a  class="king-btn king-primary king-btn-mini dotask" title="去执行">去执行</a>'
 			                	btnGroup += '<a  class="king-btn king-danger king-btn-mini del" title="删除">删除</a></div>';
 			                    return btnGroup;
 			                }
