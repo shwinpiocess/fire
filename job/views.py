@@ -1400,20 +1400,28 @@ def getLogContentByIp(request):
         if appId != step_instance.appId:
             return JsonResponse({"msg":{"message":u"权限不足","msgType":2},"success":False}) 
 
-        qs = StepInstanceEvent.objects.filter(task=step_instance.playTaskName, host_name=ip)
+        #qs = StepInstanceEvent.objects.filter(task=step_instance.playTaskName, host_name=ip)
+        qs = StepInstanceEvent.objects.filter(task=step_instance.playTaskName)
         if not qs:
             return JsonResponse({"msg":{"message":u"日志内容不存在","msgType":2},"success":False})
 
-        step_instance_event = qs[0]
+        #step_instance_event = qs[0]
+        logs = []
+        for obj in qs:
+            log_content = obj.event_data.get('res', {}).get('stdout', '')
+            if not log_content:
+                log_content = obj.event_data.get('res', {}).get('msg', '')
+            log = u'%s %s' % (obj.host_name, log_content)
+            logs.append(log)
 
-        log_content = step_instance_event.event_data.get('res', {}).get('stdout', '')
-        if not log_content:
-            log_content = step_instance_event.event_data.get('res', {}).get('msg', '')
+        #log_content = step_instance_event.event_data.get('res', {}).get('stdout', '')
+        #if not log_content:
+        #    log_content = step_instance_event.event_data.get('res', {}).get('msg', '')
 
         payload = {
             "data": {
                 "startTime": "2016-08-22 14:39:54",
-                "logContent": log_content,
+                "logContent": ''.join(logs),
                 "errorType": 0,
                 "retryCount": 0,
                 "status": 9,
